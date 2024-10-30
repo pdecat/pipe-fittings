@@ -24,7 +24,7 @@ func LoadWorkspacePromptingForVariables(ctx context.Context, workspacePath strin
 		return w, errAndWarnings
 	}
 
-	// kif there wqs an error check if it was a missing variable error and if so prompt for variables
+	// if there was an error check if it was a missing variable error and if so prompt for variables
 	if err := HandleWorkspaceLoadError(ctx, errAndWarnings.GetError(), workspacePath); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}

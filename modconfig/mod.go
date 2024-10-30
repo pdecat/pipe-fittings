@@ -189,23 +189,6 @@ func (m *Mod) OnDecoded(block *hcl.Block, _ ModResourcesProvider) hcl.Diagnostic
 	return m.Require.initialise(block)
 }
 
-//	func (m *Mod) AddReference(ref *ResourceReference) {
-//		m.PowerpipeModResources.References[ref.Name()] = ref
-//	}
-//
-// // GetReferences implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
-//
-//	func (m *Mod) GetReferences() []*ResourceReference {
-//		var res = make([]*ResourceReference, len(m.PowerpipeModResources.References))
-//		// convert from map to array
-//		idx := 0
-//		for _, ref := range m.PowerpipeModResources.References {
-//			res[idx] = ref
-//			idx++
-//		}
-//		return res
-//	}
-//
 // AddReference implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
 func (m *Mod) AddReference(ref *ResourceReference) {
 	m.Resources.AddReference(ref)

@@ -109,13 +109,6 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 	c := &ModParseContext{
 		ParseContext: parseContext,
 
-		// TODO K can we remove?
-		// TODO: fix this issue
-		// TODO: temporary mapping until we sort out merging Flowpipe and Steampipe
-		// : make(map[string]*flowpipe.Pipeline),
-		//TriggerHcls:     make(map[string]*flowpipe.Trigger),
-		//IntegrationHcls: make(map[string]flowpipe.Integration),
-
 		WorkspaceLock: workspaceLock,
 
 		topLevelDependencyMods: make(modconfig.ModMap),
@@ -179,8 +172,6 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.Res
 			child.AddVariablesToEvalContext()
 		}
 	}
-	//child.Credentials = parent.Credentials
-	//child.Notifiers = parent.Notifiers
 	child.connectionValueMap = parent.connectionValueMap
 
 	// ensure to inherit the value of includeLateBindingResourcesInEvalContext
@@ -491,7 +482,7 @@ func (m *ModParseContext) RebuildEvalContext() {
 	if !m.supportLateBinding && len(m.PipelingConnections) > 0 {
 		variables[schema.BlockTypeConnection] = cty.ObjectVal(m.connectionValueMap)
 	}
-	// should we include connections and notifiers?
+	// should we include connections
 	if m.supportLateBinding && m.includeLateBindingResourcesInEvalContext {
 		if len(m.PipelingConnections) > 0 {
 			connMap := BuildTemporaryConnectionMapForEvalContext(m.PipelingConnections)
