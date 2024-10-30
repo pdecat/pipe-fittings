@@ -27,7 +27,7 @@ func (m *ResourceMetadata) SetMod(mod *Mod) {
 		return
 	}
 	m.ModName = mod.ShortName
-	m.ModFullName = mod.FullName
+	m.ModFullName = mod.GetFullName()
 }
 
 func (m *ResourceMetadata) Clone() ResourceMetadata {

@@ -2,94 +2,14 @@ package workspace
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	"log/slog"
 	"time"
 
-	"github.com/spf13/viper"
-	"github.com/turbot/pipe-fittings/connection"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/credential"
 	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/inputvars"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/statushooks"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
-	"github.com/turbot/terraform-components/terraform"
 )
-
-type LoadWorkspaceOption func(*LoadWorkspaceConfig)
-
-type LoadWorkspaceConfig struct {
-	credentials                 map[string]credential.Credential
-	pipelingConnections         map[string]connection.PipelingConnection
-	integrations                map[string]modconfig.Integration
-	notifiers                   map[string]modconfig.Notifier
-	blockTypeInclusions         []string
-	validateVariables           bool
-	skipResourceLoadIfNoModfile bool
-	supportLateBinding          bool
-}
-
-func newLoadWorkspaceConfig() *LoadWorkspaceConfig {
-	return &LoadWorkspaceConfig{
-		credentials:         make(map[string]credential.Credential),
-		integrations:        make(map[string]modconfig.Integration),
-		notifiers:           make(map[string]modconfig.Notifier),
-		pipelingConnections: make(map[string]connection.PipelingConnection),
-		validateVariables:   true,
-		supportLateBinding:  true,
-	}
-}
-
-func WithPipelingConnections(pipelingConnections map[string]connection.PipelingConnection) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.pipelingConnections = pipelingConnections
-	}
-}
-
-func WithLateBinding(enabled bool) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.supportLateBinding = enabled
-	}
-}
-
-func WithCredentials(credentials map[string]credential.Credential) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.credentials = credentials
-	}
-}
-
-func WithIntegrations(integrations map[string]modconfig.Integration) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.integrations = integrations
-	}
-}
-
-func WithNotifiers(notifiers map[string]modconfig.Notifier) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.notifiers = notifiers
-	}
-}
-
-func WithBlockType(blockTypeInclusions []string) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.blockTypeInclusions = blockTypeInclusions
-	}
-}
-func WithVariableValidation(enabled bool) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.validateVariables = enabled
-	}
-}
-
-// TODO this is only needed as Pipe fittings tests rely on loading workspaces without modfiles
-func WithSkipResourceLoadIfNoModfile(enabled bool) LoadWorkspaceOption {
-	return func(m *LoadWorkspaceConfig) {
-		m.skipResourceLoadIfNoModfile = enabled
-	}
-}
 
 func LoadWorkspacePromptingForVariables(ctx context.Context, workspacePath string, opts ...LoadWorkspaceOption) (*Workspace, error_helpers.ErrorAndWarnings) {
 	// do not load resources if there is no modfile
@@ -103,64 +23,54 @@ func LoadWorkspacePromptingForVariables(ctx context.Context, workspacePath strin
 	if errAndWarnings.GetError() == nil {
 		return w, errAndWarnings
 	}
-	var missingVariablesError steampipeconfig.MissingVariableError
-	ok := errors.As(errAndWarnings.GetError(), &missingVariablesError)
-	// if there was an error which is NOT a MissingVariableError, return it
-	if !ok {
-		return nil, errAndWarnings
-	}
-	// if there are missing transitive dependency variables, fail as we do not prompt for these
-	if len(missingVariablesError.MissingTransitiveVariables) > 0 {
-		return nil, errAndWarnings
-	}
-	// if interactive input is disabled, return the missing variables error
-	if !viper.GetBool(constants.ArgInput) {
-		return nil, error_helpers.NewErrorsAndWarning(missingVariablesError)
-	}
-	// so we have missing variables - prompt for them
-	// first hide spinner if it is there
-	statushooks.Done(ctx)
-	if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, workspacePath); err != nil {
-		slog.Debug("Interactive variables prompting returned error", "error", err)
+
+	// kif there wqs an error check if it was a missing variable error and if so prompt for variables
+	if err := HandleWorkspaceLoadError(ctx, errAndWarnings.GetError(), workspacePath); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
+
 	// ok we should have all variables now - reload workspace
 	return Load(ctx, workspacePath, opts...)
 }
 
-func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {
-	fmt.Println()                                       //nolint:forbidigo // UI formatting
-	fmt.Println("Variables defined with no value set.") //nolint:forbidigo // UI formatting
-	for _, v := range missingVariables {
-		variableName := v.ShortName
-		variableDisplayName := fmt.Sprintf("var.%s", v.ShortName)
-		// if this variable is NOT part of the workspace mod, add the mod name to the variable name
-		if v.Mod.ModPath != workspacePath {
-			variableDisplayName = fmt.Sprintf("%s.var.%s", v.ModName, v.ShortName)
-			variableName = fmt.Sprintf("%s.%s", v.ModName, v.ShortName)
-		}
-		r, err := promptForVariable(ctx, variableDisplayName, v.GetDescription())
-		if err != nil {
-			return err
-		}
-		addInteractiveVariableToViper(variableName, r)
+// Load_ creates a Workspace and loads the workspace mod
+
+func Load(ctx context.Context, workspacePath string, opts ...LoadWorkspaceOption) (w *Workspace, ew error_helpers.ErrorAndWarnings) {
+	cfg := newLoadFlowpipeWorkspaceConfig()
+	for _, o := range opts {
+		o(cfg)
 	}
-	return nil
-}
 
-func promptForVariable(ctx context.Context, name, description string) (string, error) {
-	uiInput := &inputvars.UIInput{}
-	rawValue, err := uiInput.Input(ctx, &terraform.InputOpts{
-		Id:          name,
-		Query:       name,
-		Description: description,
-	})
+	utils.LogTime("w.Load start")
+	defer utils.LogTime("w.Load end")
 
-	return rawValue, err
-}
+	w = &Workspace{
+		Path:              workspacePath,
+		VariableValues:    make(map[string]string),
+		ValidateVariables: true,
+		Mod:               modconfig.NewMod("local", workspacePath, hcl.Range{}),
+	}
 
-func addInteractiveVariableToViper(name string, rawValue string) {
-	varMap := viper.GetStringMap(constants.ConfigInteractiveVariables)
-	varMap[name] = rawValue
-	viper.Set(constants.ConfigInteractiveVariables, varMap)
+	// check whether the workspace contains a modfile
+	// this will determine whether we load files recursively, and create pseudo resources for sql files
+	w.SetModfileExists()
+
+	// load the .steampipe ignore file
+	if err := w.LoadExclusions(); err != nil {
+		return nil, error_helpers.NewErrorsAndWarning(err)
+	}
+
+	w.PipelingConnections = cfg.pipelingConnections
+	w.SupportLateBinding = cfg.supportLateBinding
+	w.BlockTypeInclusions = cfg.blockTypeInclusions
+	w.ValidateVariables = cfg.validateVariables
+
+	w.configValueMaps = cfg.configValueMaps
+	w.decoderOptions = cfg.decoderOptions
+
+	// if there is a mod file (or if we are loading resources even with no modfile), load them
+	if w.ModfileExists() || !cfg.skipResourceLoadIfNoModfile {
+		ew = w.LoadWorkspaceMod(ctx)
+	}
+	return
 }

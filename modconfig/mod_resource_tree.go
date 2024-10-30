@@ -18,7 +18,7 @@ func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) (err error) {
 		}
 	}()
 
-	// build lookup of children and parents
+	// build lookup of Children and parents
 	childrenLookup, err := m.getChildParentsLookup()
 	if err != nil {
 		return err
@@ -38,6 +38,7 @@ func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) (err error) {
 		if !ok {
 			return fmt.Errorf("dependency mod %s is not loaded", requiredMod.Name)
 		}
+
 		if err := m.addResourcesIntoTree(depMod, childrenLookup); err != nil {
 			return err
 		}
@@ -47,7 +48,7 @@ func (m *Mod) BuildResourceTree(loadedDependencyMods ModMap) (err error) {
 }
 
 func (m *Mod) getChildParentsLookup() (map[string][]ModTreeItem, error) {
-	// build lookup of all children
+	// build lookup of all Children
 	childrenLookup := make(map[string][]ModTreeItem)
 	resourceFunc := func(parent HclResource) (bool, error) {
 		if treeItem, ok := parent.(ModTreeItem); ok {
@@ -58,7 +59,7 @@ func (m *Mod) getChildParentsLookup() (map[string][]ModTreeItem, error) {
 		// continue walking
 		return true, nil
 	}
-	err := m.ResourceMaps.WalkResources(resourceFunc)
+	err := m.Resources.WalkResources(resourceFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem, childParentLookup map[st
 			return err
 		}
 		if p == m {
-			m.children = append(m.children, item)
+			m.Children = append(m.Children, item)
 		}
 	}
 
@@ -128,7 +129,7 @@ func (m *Mod) addItemIntoResourceTree(item ModTreeItem, childParentLookup map[st
 // check whether a resource with the same name has already been added to the mod
 // (it is possible to add the same resource to a mod more than once as the parent resource
 // may have dependency errors and so be decoded again)
-func checkForDuplicate(existing, new HclResource) hcl.Diagnostics {
+func CheckForDuplicate(existing, new HclResource) hcl.Diagnostics {
 	if existing.GetDeclRange().String() == new.GetDeclRange().String() {
 		// decl range is the same - this is the same resource - allowable
 		return nil
@@ -141,5 +142,5 @@ func checkForDuplicate(existing, new HclResource) hcl.Diagnostics {
 }
 
 func (m *Mod) AddResource(item HclResource) hcl.Diagnostics {
-	return m.ResourceMaps.AddResource(item)
+	return m.Resources.AddResource(item)
 }

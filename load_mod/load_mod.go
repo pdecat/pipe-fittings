@@ -52,7 +52,7 @@ func LoadMod(ctx context.Context, modPath string, parseCtx *parse.ModParseContex
 	}
 
 	// populate the resource maps of the current mod using the dependency mods
-	mod.ResourceMaps = parseCtx.GetResourceMaps()
+	mod.SetModResources(parseCtx.GetModResources())
 
 	// now load the mod resource hcl (
 	var resourceResult error_helpers.ErrorAndWarnings
@@ -103,10 +103,11 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (*modcon
 }
 
 func loadModDependenciesAsync(ctx context.Context, parent *modconfig.Mod, parseCtx *parse.ModParseContext) error {
-	utils.LogTime(fmt.Sprintf("loadModDependenciesAsync for %s start", parent.ModPath))
-	defer utils.LogTime(fmt.Sprintf("loadModDependenciesAsync for %s end", parent.ModPath))
+	utils.LogTime(fmt.Sprintf("loadModDependenciesAsync for %s start", parent.GetModPath()))
+	defer utils.LogTime(fmt.Sprintf("loadModDependenciesAsync for %s end", parent.GetModPath()))
 
-	if parent.Require == nil || len(parent.Require.Mods) == 0 {
+	parentRequire := parent.GetRequire()
+	if parentRequire == nil || len(parentRequire.Mods) == 0 {
 		return nil
 	}
 
@@ -118,9 +119,9 @@ func loadModDependenciesAsync(ctx context.Context, parent *modconfig.Mod, parseC
 
 	var errors []error
 	var wg sync.WaitGroup
-	var errChan = make(chan error, len(parent.Require.Mods))
+	var errChan = make(chan error, len(parentRequire.Mods))
 
-	for _, r := range parent.Require.Mods {
+	for _, r := range parentRequire.Mods {
 		wg.Add(1)
 		go func(requiredModVersion *modconfig.ModVersionConstraint) {
 			defer wg.Done()
@@ -184,11 +185,11 @@ func loadModDependency(ctx context.Context, requiredModVersion *modconfig.ModVer
 }
 
 func loadModResources(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*modconfig.Mod, error_helpers.ErrorAndWarnings) {
-	utils.LogTime(fmt.Sprintf("loadModResources %s start", mod.ModPath))
-	defer utils.LogTime(fmt.Sprintf("loadModResources %s end", mod.ModPath))
+	utils.LogTime(fmt.Sprintf("loadModResources %s start", mod.GetModPath()))
+	defer utils.LogTime(fmt.Sprintf("loadModResources %s end", mod.GetModPath()))
 
 	// get the source files
-	sourcePaths, err := getSourcePaths(ctx, mod.ModPath, parseCtx.ListOptions)
+	sourcePaths, err := getSourcePaths(ctx, mod.GetModPath(), parseCtx.ListOptions)
 	if err != nil {
 		slog.Warn("LoadMod: failed to get mod file paths", "error", err)
 		return nil, error_helpers.NewErrorsAndWarning(err)
@@ -254,7 +255,7 @@ func LoadModWithFileName(ctx context.Context, modPath, modFile string, parseCtx 
 	}
 
 	// populate the resource maps of the current mod using the dependency mods
-	mod.ResourceMaps = parseCtx.GetResourceMaps()
+	mod.SetModResources(parseCtx.GetModResources())
 	// now load the mod resource hcl (
 	mod, errorsAndWarnings = loadModResources(ctx, mod, parseCtx)
 

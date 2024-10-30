@@ -23,7 +23,7 @@ package workspace
 //				Require:     &modconfig.Require{},
 //				Description: toStringPointer("this mod is to test runtime dependencies for named arguments"),
 //				Title:       toStringPointer("dashboard runtime dependencies named arguments"),
-//				ResourceMaps: &modconfig.ResourceMaps{
+//				Resources: &modconfig.Resources{
 //					Queries: map[string]*modconfig.Query{
 //						"dashboard_runtime_deps_named_arg.query.query1": {
 //							FullName:        "dashboard_runtime_deps_named_arg.query.query1",
@@ -90,21 +90,21 @@ package workspace
 //						"To: query.query1\nFrom: input.user\nBlockType: input\nBlockName: user\nAttribute: sql": {
 //							To:        "query.query1",
 //							From:      "input.user",
-//							BlockType: "input",
+//							GetBlockType: "input",
 //							BlockName: "user",
 //							Attribute: "sql",
 //						},
 //						"To: query.query2\nFrom: table.dashboard_dashboard_named_args_anonymous_table_0\nBlockType: table\nBlockName: \nAttribute: query": {
 //							To:        "query.query2",
 //							From:      "table.dashboard_dashboard_named_args_anonymous_table_0",
-//							BlockType: "table",
+//							GetBlockType: "table",
 //							BlockName: "",
 //							Attribute: "query",
 //						},
 //						"To: self.input.user\nFrom: table.dashboard_dashboard_named_args_anonymous_table_0\nBlockType: table\nBlockName: \nAttribute: args": {
 //							To:        "self.input.user",
 //							From:      "table.dashboard_dashboard_named_args_anonymous_table_0",
-//							BlockType: "table",
+//							GetBlockType: "table",
 //							BlockName: "",
 //							Attribute: "args",
 //						},
@@ -135,7 +135,7 @@ package workspace
 //				Require:     &modconfig.Require{},
 //				Description: toStringPointer("this mod is to test runtime dependencies for positional arguments"),
 //				Title:       toStringPointer("dashboard runtime dependencies positional arguments"),
-//				ResourceMaps: &modconfig.ResourceMaps{
+//				Resources: &modconfig.Resources{
 //					Queries: map[string]*modconfig.Query{
 //						"dashboard_runtime_deps_pos_arg.query.query1": {
 //							FullName:  "dashboard_runtime_deps_pos_arg.query.query1",
@@ -202,21 +202,21 @@ package workspace
 //						"To: query.query1\nFrom: input.user\nBlockType: input\nBlockName: user\nAttribute: sql": {
 //							To:        "query.query1",
 //							From:      "input.user",
-//							BlockType: "input",
+//							GetBlockType: "input",
 //							BlockName: "user",
 //							Attribute: "sql",
 //						},
 //						"To: query.query2\nFrom: table.dashboard_dashboard_pos_args_anonymous_table_0\nBlockType: table\nBlockName: \nAttribute: query": {
 //							To:        "query.query2",
 //							From:      "table.dashboard_dashboard_pos_args_anonymous_table_0",
-//							BlockType: "table",
+//							GetBlockType: "table",
 //							BlockName: "",
 //							Attribute: "query",
 //						},
 //						"To: self.input.user\nFrom: table.dashboard_dashboard_pos_args_anonymous_table_0\nBlockType: table\nBlockName: \nAttribute: args": {
 //							To:        "self.input.user",
 //							From:      "table.dashboard_dashboard_pos_args_anonymous_table_0",
-//							BlockType: "table",
+//							GetBlockType: "table",
 //							BlockName: "",
 //							Attribute: "args",
 //						},
@@ -245,7 +245,7 @@ package workspace
 //				FullName:  "mod.local",
 //				Title:     toStringPointer("dependent_mod"),
 //				Require:   &modconfig.Require{},
-//				ResourceMaps: &modconfig.ResourceMaps{
+//				Resources: &modconfig.Resources{
 //					Queries: map[string]*modconfig.Query{
 //						"m1.query.m1_q1": {
 //							ShortName:       "m1_q1",
@@ -338,21 +338,21 @@ package workspace
 //						"To: m1.query.m1_q1\nFrom: chart.chart1\nBlockType: chart\nBlockName: chart1\nAttribute: query": {
 //							To:        "m1.query.m1_q1",
 //							From:      "chart.chart1",
-//							BlockType: "chart",
+//							GetBlockType: "chart",
 //							BlockName: "chart1",
 //							Attribute: "query",
 //						},
 //						"To: m1.chart.global_chart\nFrom: chart.dashboard_local_d1_anonymous_chart_0\nBlockType: chart\nBlockName: \nAttribute: base": {
 //							To:        "m1.chart.global_chart",
 //							From:      "chart.dashboard_local_d1_anonymous_chart_0",
-//							BlockType: "chart",
+//							GetBlockType: "chart",
 //							BlockName: "",
 //							Attribute: "base",
 //						},
 //						"To: m1.input.global_input\nFrom: input.i1\nBlockType: input\nBlockName: i1\nAttribute: base": {
 //							To:        "m1.input.global_input",
 //							From:      "input.i1",
-//							BlockType: "input",
+//							GetBlockType: "input",
 //							BlockName: "i1",
 //							Attribute: "base",
 //						},
@@ -371,7 +371,7 @@ package workspace
 //				FullName:  "mod.local",
 //				Title:     toStringPointer("dependent_mod"),
 //				Require:   &modconfig.Require{},
-//				ResourceMaps: &modconfig.ResourceMaps{
+//				Resources: &modconfig.Resources{
 //					Queries: map[string]*modconfig.Query{
 //						"m1.query.m1_q1": {
 //							ShortName:       "m1_q1",
@@ -446,7 +446,7 @@ package workspace
 //						"To: m1.dashboard.m1_d1\nFrom: dashboard.local_d1\nBlockType: dashboard\nBlockName: local_d1\nAttribute: base": {
 //							To:        "m1.dashboard.m1_d1",
 //							From:      "dashboard.local_d1",
-//							BlockType: "dashboard",
+//							GetBlockType: "dashboard",
 //							BlockName: "local_d1",
 //							Attribute: "base",
 //						},
@@ -517,7 +517,7 @@ package workspace
 //
 //// try to resolve mod resource children using their child names
 //func setChildren(mod *modconfig.Mod) error {
-//	for _, benchmark := range mod.ResourceMaps.Benchmarks {
+//	for _, benchmark := range mod.Resources.Benchmarks {
 //		for _, childName := range benchmark.ChildNames {
 //			parsed, _ := modconfig.ParseResourceName(childName.Name)
 //			child, found := modconfig.GetResource(mod, parsed)
@@ -527,7 +527,7 @@ package workspace
 //			benchmark.Children = append(benchmark.Children, child.(modconfig.ModTreeItem))
 //		}
 //	}
-//	for _, container := range mod.ResourceMaps.DashboardContainers {
+//	for _, container := range mod.Resources.DashboardContainers {
 //		var children []modconfig.ModTreeItem
 //		for _, childName := range container.ChildNames {
 //			parsed, _ := modconfig.ParseResourceName(childName)
@@ -546,7 +546,7 @@ package workspace
 //		container.SetChildren(children)
 //
 //	}
-//	for _, dashboard := range mod.ResourceMaps.Dashboards {
+//	for _, dashboard := range mod.Resources.Dashboards {
 //		var children []modconfig.ModTreeItem
 //		for _, childName := range dashboard.ChildNames {
 //			parsed, _ := modconfig.ParseResourceName(childName)
@@ -751,8 +751,8 @@ package workspace
 // 	if actual.Mod.String() != expected.Mod.String() {
 // 		errors = append(errors, fmt.Sprintf("workspace mods do not match - expected \n\n%s\n\nbut got\n\n%s\n", expected.Mod.String(), actual.Mod.String()))
 // 	}
-// 	expectedMaps := expected.GetResourceMaps()
-// 	actualMaps := actual.GetResourceMaps()
+// 	expectedMaps := expected.GetModResources()
+// 	actualMaps := actual.GetModResources()
 
 // 	for name, expectedQuery := range expectedMaps.Queries {
 // 		actualQuery, ok := actualMaps.Queries[name]

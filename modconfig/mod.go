@@ -2,6 +2,8 @@ package modconfig
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
+
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,7 +62,7 @@ type Mod struct {
 	ModPath string `json:"-"`
 
 	// convenient aggregation of all resources
-	ResourceMaps *ResourceMaps `json:"-"`
+	Resources ModResources `json:"-"`
 
 	// the filepath of the mod.sp/mod.fp/mod.pp file (will be empty for default mod)
 	modFilePath string
@@ -75,14 +77,14 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 				FullName:        name,
 				UnqualifiedName: name,
 				DeclRange:       defRange,
-				blockType:       schema.BlockTypeMod,
+				BlockType:       schema.BlockTypeMod,
 			},
 		},
 		ModPath: modPath,
 		Require: NewRequire(),
 	}
-	mod.ResourceMaps = NewResourceMaps(mod)
-
+	// call the app specific resource maps constructor to make an empty resource maps
+	mod.Resources = NewModResources(mod)
 	return mod
 }
 
@@ -129,7 +131,7 @@ func (m *Mod) Equals(other *Mod) bool {
 	}
 
 	// now check the child resources
-	return m.ResourceMaps.Equals(other.ResourceMaps)
+	return m.Resources.Equals(other.Resources)
 }
 
 func (m *Mod) CacheKey() string {
@@ -145,7 +147,7 @@ func (m *Mod) CacheKey() string {
 func CreateDefaultMod(modPath string) *Mod {
 	m := NewMod(defaultModName, modPath, hcl.Range{})
 	folderName := filepath.Base(modPath)
-	m.Title = &folderName
+	m.SetTitle(folderName)
 	return m
 }
 
@@ -163,7 +165,7 @@ func (m *Mod) GetPaths() []NodePath {
 func (m *Mod) SetPaths() {}
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
+func (m *Mod) OnDecoded(block *hcl.Block, _ ModResourcesProvider) hcl.Diagnostics {
 	// handle legacy requires block
 	if m.LegacyRequire != nil && !m.LegacyRequire.Empty() {
 		// ensure that both 'require' and 'requires' were not set
@@ -187,30 +189,44 @@ func (m *Mod) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostic
 	return m.Require.initialise(block)
 }
 
+//	func (m *Mod) AddReference(ref *ResourceReference) {
+//		m.PowerpipeModResources.References[ref.Name()] = ref
+//	}
+//
+// // GetReferences implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
+//
+//	func (m *Mod) GetReferences() []*ResourceReference {
+//		var res = make([]*ResourceReference, len(m.PowerpipeModResources.References))
+//		// convert from map to array
+//		idx := 0
+//		for _, ref := range m.PowerpipeModResources.References {
+//			res[idx] = ref
+//			idx++
+//		}
+//		return res
+//	}
+//
 // AddReference implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
 func (m *Mod) AddReference(ref *ResourceReference) {
-	m.ResourceMaps.References[ref.Name()] = ref
+	m.Resources.AddReference(ref)
 }
 
 // GetReferences implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
 func (m *Mod) GetReferences() []*ResourceReference {
-	var res = make([]*ResourceReference, len(m.ResourceMaps.References))
-	// convert from map to array
-	idx := 0
-	for _, ref := range m.ResourceMaps.References {
-		res[idx] = ref
-		idx++
-	}
-	return res
+	return maps.Values(m.Resources.GetReferences())
 }
 
-// GetResourceMaps implements ResourceMapsProvider
-func (m *Mod) GetResourceMaps() *ResourceMaps {
-	return m.ResourceMaps
+// GetModResources implements ModResourcesProvider
+func (m *Mod) GetModResources() ModResources {
+	return m.Resources
+}
+
+func (m *Mod) SetModResources(modResources ModResources) {
+	m.Resources = modResources
 }
 
 func (m *Mod) GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool) {
-	return m.ResourceMaps.GetResource(parsedName)
+	return m.Resources.GetResource(parsedName)
 }
 
 func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
@@ -315,11 +331,14 @@ func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
 }
 
 func (m *Mod) WalkResources(resourceFunc func(item HclResource) (bool, error)) error {
-	return m.ResourceMaps.WalkResources(resourceFunc)
+	return m.Resources.WalkResources(resourceFunc)
 }
 
 func (m *Mod) SetFilePath(modFilePath string) {
 	m.modFilePath = modFilePath
+}
+func (m *Mod) GetFilePath() string {
+	return m.modFilePath
 }
 
 // ValidateRequirements validates that the current steampipe CLI and the installed plugins is compatible with the mod
@@ -370,8 +389,8 @@ func (m *Mod) GetInstallCacheKey() string {
 	return m.ShortName
 }
 
-// SetDependencyConfig sets DependencyPath, DependencyName and Version
-func (m *Mod) SetDependencyConfig(dependencyPath string) error {
+// SetDependencyConfigFromPath sets DependencyPath, DependencyName and Version
+func (m *Mod) SetDependencyConfigFromPath(dependencyPath string) error {
 	// parse the dependency path to get the dependency name and version
 	dependencyName, dependencyVersion, err := ParseModDependencyPath(dependencyPath)
 	if err != nil {
@@ -381,6 +400,12 @@ func (m *Mod) SetDependencyConfig(dependencyPath string) error {
 	m.DependencyName = dependencyName
 	m.Version = dependencyVersion
 	return nil
+}
+
+func (m *Mod) SetDependencyConfig(dependencyVersion *DependencyVersion, dependencyPath *string, dependencyName string) {
+	m.DependencyPath = dependencyPath
+	m.DependencyName = dependencyName
+	m.Version = dependencyVersion
 }
 
 // RequireHasUnresolvedArgs returns whether the mod has any mod requirements which have unresolved args
@@ -420,4 +445,30 @@ func (m *Mod) GetDefaultConnectionString(evalContext *hcl.EvalContext) (string, 
 	}
 	// if no database is set on mod, use the default steampipe connection
 	return constants.DefaultSteampipeConnectionString, nil
+}
+
+func (m *Mod) GetDependencyName() string {
+	return m.DependencyName
+}
+func (m *Mod) GetDependencyPath() *string {
+	return m.DependencyPath
+}
+
+func (m *Mod) GetModPath() string {
+	return m.ModPath
+}
+
+func (m *Mod) GetRequire() *Require {
+	return m.Require
+}
+
+func (m *Mod) SetRequire(require *Require) {
+	m.Require = require
+}
+
+func (m *Mod) SetTitle(title string) {
+	m.Title = &title
+}
+func (m *Mod) GetVersion() *DependencyVersion {
+	return m.Version
 }

@@ -61,7 +61,7 @@ func NewVariable(v *RawVariable, mod *Mod) *Variable {
 				FullName:        fullName,
 				DeclRange:       v.DeclRange,
 				UnqualifiedName: fmt.Sprintf("var.%s", v.Name),
-				blockType:       schema.BlockTypeVariable,
+				BlockType:       schema.BlockTypeVariable,
 			},
 			Mod: mod,
 		},
@@ -104,7 +104,7 @@ func (v *Variable) Equals(other *Variable) bool {
 }
 
 // OnDecoded implements HclResource
-func (v *Variable) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
+func (v *Variable) OnDecoded(block *hcl.Block, _ ModResourcesProvider) hcl.Diagnostics {
 	return nil
 }
 
@@ -150,8 +150,8 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	return nil
 }
 
-func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {
-	res := &DashboardTreeItemDiffs{
+func (v *Variable) Diff(other *Variable) *ModTreeItemDiffs {
+	res := &ModTreeItemDiffs{
 		Item: v,
 		Name: v.Name(),
 	}
@@ -164,7 +164,7 @@ func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Value")
 	}
 
-	res.populateChildDiffs(v, other)
+	res.PopulateChildDiffs(v, other)
 	return res
 }
 

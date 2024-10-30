@@ -14,15 +14,17 @@ type HclResource interface {
 	GetTitle() string
 	GetUnqualifiedName() string
 	GetShortName() string
-	OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics
+	GetFullName() string
+	OnDecoded(*hcl.Block, ModResourcesProvider) hcl.Diagnostics
 	GetDeclRange() *hcl.Range
-	BlockType() string
+	GetBlockType() string
 	GetDescription() string
 	GetDocumentation() string
 	GetTags() map[string]string
 	SetTopLevel(bool)
 	IsTopLevel() bool
 	GetBase() HclResource
+	GetNestedStructs() []CtyValueProvider
 	GetHclResourceImpl() *HclResourceImpl
 }
 
@@ -30,7 +32,6 @@ type HclResource interface {
 // i.e. Control, Benchmark, Dashboard
 type ModTreeItem interface {
 	HclResource
-	ModItem
 	DatabaseItem
 
 	AddParent(ModTreeItem) error
@@ -56,37 +57,6 @@ type ModItem interface {
 	GetMod() *Mod
 }
 
-// RuntimeDependencyProvider is implemented by all QueryProviders and Dashboard
-type RuntimeDependencyProvider interface {
-	ModTreeItem
-	AddRuntimeDependencies([]*RuntimeDependency)
-	GetRuntimeDependencies() map[string]*RuntimeDependency
-}
-
-type WithProvider interface {
-	AddWith(with *DashboardWith) hcl.Diagnostics
-	GetWiths() []*DashboardWith
-	GetWith(string) (*DashboardWith, bool)
-}
-
-// QueryProvider must be implemented by resources which have query/sql
-type QueryProvider interface {
-	RuntimeDependencyProvider
-	GetArgs() *QueryArgs
-	GetParams() []*ParamDef
-	GetSQL() *string
-	GetQuery() *Query
-	SetArgs(*QueryArgs)
-	SetParams([]*ParamDef)
-	GetResolvedQuery(*QueryArgs) (*ResolvedQuery, error)
-	RequiresExecution(QueryProvider) bool
-	ValidateQuery() hcl.Diagnostics
-	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
-	GetQueryProviderImpl() *QueryProviderImpl
-	ParamsInheritedFromBase() bool
-	ArgsInheritedFromBase() bool
-}
-
 type CtyValueProvider interface {
 	CtyValue() (cty.Value, error)
 }
@@ -100,36 +70,27 @@ type ResourceWithMetadata interface {
 	IsAnonymous() bool
 	AddReference(ref *ResourceReference)
 	GetReferences() []*ResourceReference
+	GetResourceWithMetadataRemain() hcl.Body
 }
 
-// DashboardLeafNode must be implemented by resources may be a leaf node in the dashboard execution tree
-type DashboardLeafNode interface {
-	ModTreeItem
-	ResourceWithMetadata
-	GetDisplay() string
-	GetType() string
-	GetWidth() int
+type ModResources interface {
+	WalkResources(resourceFunc func(item HclResource) (bool, error)) error
+	AddResource(item HclResource) hcl.Diagnostics
+	GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool)
+	Equals(other ModResources) bool
+	AddReference(ref *ResourceReference)
+	GetReferences() map[string]*ResourceReference
+	GetVariables() map[string]*Variable
+	GetMods() map[string]*Mod
+	TopLevelResources() ModResources
+	AddMaps(i ...ModResources)
 }
 
-type ResourceMapsProvider interface {
-	GetResourceMaps() *ResourceMaps
+type ModResourcesProvider interface {
+	GetModResources() ModResources
 	GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool)
 }
 
 type ResourceProvider interface {
 	GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool)
-}
-
-// NodeAndEdgeProvider must be implemented by any dashboard leaf node which supports edges and nodes
-// (DashboardGraph, DashboardFlow, DashboardHierarchy)
-// TODO [node_reuse] add NodeAndEdgeProviderImpl https://github.com/turbot/steampipe/issues/2918
-type NodeAndEdgeProvider interface {
-	QueryProvider
-	WithProvider
-	GetEdges() DashboardEdgeList
-	SetEdges(DashboardEdgeList)
-	GetNodes() DashboardNodeList
-	SetNodes(DashboardNodeList)
-	AddCategory(category *DashboardCategory) hcl.Diagnostics
-	AddChild(child HclResource) hcl.Diagnostics
 }

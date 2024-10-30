@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/schema"
 	"github.com/turbot/pipe-fittings/utils"
@@ -20,6 +19,7 @@ type Local struct {
 }
 
 func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local {
+	// special case creation code
 	fullName := fmt.Sprintf("%s.local.%s", mod.ShortName, name)
 	l := &Local{
 		Value: val,
@@ -29,7 +29,7 @@ func NewLocal(name string, val cty.Value, declRange hcl.Range, mod *Mod) *Local 
 				UnqualifiedName: fmt.Sprintf("local.%s", name),
 				FullName:        fullName,
 				DeclRange:       declRange,
-				blockType:       schema.BlockTypeLocals,
+				BlockType:       schema.BlockTypeLocals,
 				// disable cty serialisation of base properties
 				disableCtySerialise: true,
 			},
@@ -44,8 +44,8 @@ func (l *Local) CtyValue() (cty.Value, error) {
 	return l.Value, nil
 }
 
-func (l *Local) Diff(other *Local) *DashboardTreeItemDiffs {
-	res := &DashboardTreeItemDiffs{
+func (l *Local) Diff(other *Local) *ModTreeItemDiffs {
+	res := &ModTreeItemDiffs{
 		Item: l,
 		Name: l.Name(),
 	}
@@ -58,6 +58,6 @@ func (l *Local) Diff(other *Local) *DashboardTreeItemDiffs {
 		res.AddPropertyDiff("Value")
 	}
 
-	res.populateChildDiffs(l, other)
+	res.PopulateChildDiffs(l, other)
 	return res
 }

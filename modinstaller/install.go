@@ -2,7 +2,6 @@ package modinstaller
 
 import (
 	"context"
-
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/utils"
 )

@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"log/slog"
 	"maps"
 	"strings"
 	"sync"
@@ -14,7 +13,6 @@ import (
 	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/connection"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/credential"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/pipe-fittings/inputvars"
 	"github.com/turbot/pipe-fittings/modconfig"
@@ -49,10 +47,6 @@ type ReferenceTypeValueMap map[string]map[string]cty.Value
 type ModParseContext struct {
 	ParseContext
 
-	// PipelineHcls map[string]*modconfig.Pipeline
-	TriggerHcls     map[string]*modconfig.Trigger
-	IntegrationHcls map[string]modconfig.Integration
-
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
 	// the workspace lock data
@@ -67,14 +61,7 @@ type ModParseContext struct {
 	// Variables is a tree of maps of the variables in the current mod and child dependency mods
 	Variables *modconfig.ModVariableMap
 
-	// Credentials are something different, it's not part of the mod, it's not part of the workspace, it is at the same level
-	// with mod and workspace. However it can be reference by the mod, so it needs to be in the parse context
-	Credentials         map[string]credential.Credential
-	CredentialImports   map[string]credential.CredentialImport
 	PipelingConnections map[string]connection.PipelingConnection
-	ConnectionImports   map[string]modconfig.ConnectionImport
-	Integrations        map[string]modconfig.Integration
-	Notifiers           map[string]modconfig.Notifier
 
 	ParentParseCtx *ModParseContext
 
@@ -97,7 +84,7 @@ type ModParseContext struct {
 	topLevelDependencyMods modconfig.ModMap
 	// if we are loading dependency mod, this contains the details
 	DependencyConfig *ModDependencyConfig
-	resourceMaps     *modconfig.ResourceMaps
+	modResources     modconfig.ModResources
 	// map of late binding variable values
 	// - this is added to the eval context if includeLateBindingResourcesInEvalContext is true
 	lateBindingVars map[string]cty.Value
@@ -107,12 +94,14 @@ type ModParseContext struct {
 	// if connections are early binding, this map contains the connection values
 	connectionValueMap map[string]cty.Value
 
-	// tactical: should temporary connections and notifiers be added to the reference values?
+	// tactical: should temporary connections be added to the reference values?
 	// this is a temporary solution until the 2 methods of determining runtime dependencies are merged
 	includeLateBindingResourcesInEvalContext bool
 
-	// mutex to control access to topLevelDependencyMods and resourceMaps when asyncronously adding dependency mods
-	depLock sync.Mutex
+	// mutex to control access to topLevelDependencyMods and modResources when asyncronously adding dependency mods
+	depLock         sync.Mutex
+	configValueMaps map[string]map[string]cty.Value
+	decoderOptions  []DecoderOption
 }
 
 func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, opts ...ModParseContextOption) (*ModParseContext, error) {
@@ -120,11 +109,12 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 	c := &ModParseContext{
 		ParseContext: parseContext,
 
+		// TODO K can we remove?
 		// TODO: fix this issue
 		// TODO: temporary mapping until we sort out merging Flowpipe and Steampipe
-		// PipelineHcls: make(map[string]*modconfig.Pipeline),
-		TriggerHcls:     make(map[string]*modconfig.Trigger),
-		IntegrationHcls: make(map[string]modconfig.Integration),
+		// : make(map[string]*flowpipe.Pipeline),
+		//TriggerHcls:     make(map[string]*flowpipe.Trigger),
+		//IntegrationHcls: make(map[string]flowpipe.Integration),
 
 		WorkspaceLock: workspaceLock,
 
@@ -138,6 +128,7 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 		lateBindingVars: make(map[string]cty.Value),
 		// default to supporting late binding
 		supportLateBinding: true,
+		configValueMaps:    make(map[string]map[string]cty.Value),
 	}
 
 	// apply options
@@ -164,13 +155,17 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.Res
 		WithParseFlags(parent.Flags),
 		WithListOptions(parent.ListOptions),
 		WithLateBinding(parent.supportLateBinding),
-		WithConnections(parent.PipelingConnections))
+		WithConnections(parent.PipelingConnections),
+		WithDecoderOptions(parent.decoderOptions...),
+		WithConfigValueMap(parent.configValueMaps))
 
 	if err != nil {
 		return nil, err
 	}
-	// copy our block types
+	// copy our block types and exclusions
 	child.blockTypes = parent.blockTypes
+	child.blockTypeExclusions = parent.blockTypeExclusions
+
 	// set the child's parent
 	child.ParentParseCtx = parent
 	// set the dependency config
@@ -184,11 +179,8 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.Res
 			child.AddVariablesToEvalContext()
 		}
 	}
-	child.Credentials = parent.Credentials
-
-	child.Integrations = parent.Integrations
-	child.CredentialImports = parent.CredentialImports
-	child.Notifiers = parent.Notifiers
+	//child.Credentials = parent.Credentials
+	//child.Notifiers = parent.Notifiers
 	child.connectionValueMap = parent.connectionValueMap
 
 	// ensure to inherit the value of includeLateBindingResourcesInEvalContext
@@ -251,8 +243,8 @@ func VariableValueCtyMap(variables map[string]*modconfig.Variable, supportLateBi
 			resourceNames, ok := ConnectionNamesValueFromCtyValue(v.Value)
 			if ok {
 				// add to late binding vars map
-				lateBindingVars[v.ShortName] = v.Value
-				lateBindingVarDeps[v.ShortName] = resourceNames
+				lateBindingVars[v.GetShortName()] = v.Value
+				lateBindingVarDeps[v.GetShortName()] = resourceNames
 			}
 		} else {
 			ret[k] = v.Value
@@ -334,9 +326,9 @@ func (m *ModParseContext) AddModResources(mod *modconfig.Mod) hcl.Diagnostics {
 	// do not add variables (as they have already been added)
 	// if the resource is for a dependency mod, do not add locals
 	shouldAdd := func(item modconfig.HclResource) bool {
-		if item.BlockType() == schema.BlockTypeMod ||
-			item.BlockType() == schema.BlockTypeVariable ||
-			item.BlockType() == schema.BlockTypeLocals && item.(modconfig.ModItem).GetMod().ShortName != m.CurrentMod.ShortName {
+		if item.GetBlockType() == schema.BlockTypeMod ||
+			item.GetBlockType() == schema.BlockTypeVariable ||
+			item.GetBlockType() == schema.BlockTypeLocals && item.(modconfig.ModItem).GetMod().GetShortName() != m.CurrentMod.ShortName {
 			return false
 		}
 		return true
@@ -425,38 +417,37 @@ func (m *ModParseContext) GetMod(modShortName string) *modconfig.Mod {
 	return nil
 }
 
-func (m *ModParseContext) GetResourceMaps() *modconfig.ResourceMaps {
-	if m.resourceMaps != nil {
-		return m.resourceMaps
-
+func (m *ModParseContext) GetModResources() modconfig.ModResources {
+	if m.modResources != nil {
+		return m.modResources
 	}
 
-	m.setResourceMaps()
-	return m.resourceMaps
+	m.setModResources()
+	return m.modResources
 }
 
-func (m *ModParseContext) setResourceMaps() {
-	utils.LogTime(fmt.Sprintf("ModParseContext.setResourceMaps %p", m))
-	defer utils.LogTime(fmt.Sprintf("ModParseContext.setResourceMaps %p end", m))
+func (m *ModParseContext) setModResources() {
+	utils.LogTime(fmt.Sprintf("ModParseContext.setModResources %p", m))
+	defer utils.LogTime(fmt.Sprintf("ModParseContext.setModResources %p end", m))
 
 	// get a map of top level loaded dep mods
 	deps := m.GetTopLevelDependencyMods()
 
 	// use the current mod as the base resource map
-	sourceResourceMaps := make([]*modconfig.ResourceMaps, 0, len(deps)+1)
+	sourceModResources := make([]modconfig.ModResources, 0, len(deps)+1)
 
-	sourceResourceMaps = append(sourceResourceMaps, m.CurrentMod.GetResourceMaps())
+	sourceModResources = append(sourceModResources, m.CurrentMod.GetModResources())
 
 	// merge in the top level resources of the dependency mods
 	for _, dep := range deps {
-		sourceResourceMaps = append(sourceResourceMaps, dep.GetResourceMaps().TopLevelResources())
+		sourceModResources = append(sourceModResources, dep.GetModResources().TopLevelResources())
 	}
 
-	m.resourceMaps = modconfig.NewResourceMaps(m.CurrentMod, sourceResourceMaps...)
+	m.modResources = modconfig.NewModResources(m.CurrentMod, sourceModResources...)
 }
 
 func (m *ModParseContext) GetResource(parsedName *modconfig.ParsedResourceName) (resource modconfig.HclResource, found bool) {
-	return m.GetResourceMaps().GetResource(parsedName)
+	return m.GetModResources().GetResource(parsedName)
 }
 
 // RebuildEvalContext the eval context from the cached reference values
@@ -491,12 +482,11 @@ func (m *ModParseContext) RebuildEvalContext() {
 		variables[mod] = cty.ObjectVal(refTypeMap)
 	}
 
-	varValueNotifierMap, err := BuildNotifierMapForEvalContext(m.Notifiers)
-	if err != nil {
-		slog.Warn("failed to build notifier map for eval context", "error", err)
+	// add in any config value maps	(these will be values of global config items which may be referred to -
+	// e.g. Flowpipe adds Notifiers)
+	for name, valueMap := range m.configValueMaps {
+		variables[name] = cty.ObjectVal(valueMap)
 	}
-
-	variables[schema.BlockTypeNotifier] = cty.ObjectVal(varValueNotifierMap)
 
 	if !m.supportLateBinding && len(m.PipelingConnections) > 0 {
 		variables[schema.BlockTypeConnection] = cty.ObjectVal(m.connectionValueMap)
@@ -508,14 +498,6 @@ func (m *ModParseContext) RebuildEvalContext() {
 			variables[schema.BlockTypeConnection] = cty.ObjectVal(connMap)
 		}
 
-		if len(m.Notifiers) > 0 {
-			notifierMap, err := BuildNotifierMapForEvalContext(m.Notifiers)
-			if err != nil {
-				slog.Warn("failed to build notifier map for eval context", "error", err)
-			}
-
-			variables[schema.BlockTypeNotifier] = cty.ObjectVal(notifierMap)
-		}
 		if len(m.lateBindingVars) > 0 {
 			var vars map[string]cty.Value
 			if currentVars, gotVars := variables[schema.AttributeVar]; gotVars {
@@ -571,24 +553,14 @@ func (m *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (c
 	if valueMap == nil {
 		valueMap = make(map[string]cty.Value)
 	}
-	base := resource.GetHclResourceImpl()
-	if err := m.mergeResourceCtyValue(base, valueMap); err != nil {
-		return cty.Zero, m.errToCtyValueDiags(resource, err)
-	}
-
-	if qp, ok := resource.(modconfig.QueryProvider); ok {
-		base := qp.GetQueryProviderImpl()
+	// get all nested structs (i.e. HclResourceImpl, ModTreeItemImpl and QueryProviderImpl - if this resource contains them)
+	nestedStructs := resource.GetNestedStructs()
+	for _, base := range nestedStructs {
 		if err := m.mergeResourceCtyValue(base, valueMap); err != nil {
 			return cty.Zero, m.errToCtyValueDiags(resource, err)
 		}
 	}
 
-	if treeItem, ok := resource.(modconfig.ModTreeItem); ok {
-		base := treeItem.GetModTreeItemImpl()
-		if err := m.mergeResourceCtyValue(base, valueMap); err != nil {
-			return cty.Zero, m.errToCtyValueDiags(resource, err)
-		}
-	}
 	return cty.ObjectVal(valueMap), nil
 }
 
@@ -652,7 +624,7 @@ func (m *ModParseContext) addReferenceValue(resource modconfig.HclResource, valu
 	}
 
 	modName := mod.ShortName
-	if mod.ModPath == m.RootEvalPath {
+	if mod.GetModPath() == m.RootEvalPath {
 		modName = "local"
 	}
 	variablesForMod, ok := m.referenceValues[modName]
@@ -714,8 +686,8 @@ func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 	m.depLock.Lock()
 	defer m.depLock.Unlock()
 
-	m.topLevelDependencyMods[mod.DependencyName] = mod
-	m.resourceMaps.AddMaps(mod.ResourceMaps.TopLevelResources())
+	m.topLevelDependencyMods[mod.GetDependencyName()] = mod
+	m.modResources.AddMaps(mod.GetModResources().TopLevelResources())
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name
@@ -726,7 +698,7 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) error {
 	m.CurrentMod = mod
 	// populate the resource maps
-	m.setResourceMaps()
+	m.setModResources()
 	// now we have the mod, load any arg values from the mod require - these will be passed to dependency mods
 	return m.loadModRequireArgs()
 }
@@ -871,61 +843,13 @@ func (m *ModParseContext) getErrorStringForUnresolvedArg(parsedVarName *modconfi
 }
 
 func (m *ModParseContext) getModRequireBlock() *hclsyntax.Block {
-	for _, b := range m.CurrentMod.ResourceWithMetadataImplRemain.(*hclsyntax.Body).Blocks {
+	for _, b := range m.CurrentMod.GetResourceWithMetadataRemain().(*hclsyntax.Body).Blocks {
 		if b.Type == schema.BlockTypeRequire {
 			return b
 		}
 	}
 	return nil
 
-}
-
-// TODO: transition period
-// AddPipeline stores this resource as a variable to be added to the eval context. It alse
-func (m *ModParseContext) AddPipeline(pipelineHcl *modconfig.Pipeline) hcl.Diagnostics {
-
-	// Split and get the last part for pipeline name
-	// pipelineFullName := pipelineHcl.Name()
-	// parts := strings.Split(pipelineFullName, ".")
-	// pipelineNameOnly := parts[len(parts)-1]
-
-	// m.PipelineHcls[pipelineNameOnly] = pipelineHcl
-	pCty, err := pipelineHcl.CtyValue()
-	if err != nil {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("failed to convert pipeline '%s' to its cty value", pipelineHcl.Name()),
-			Detail:   err.Error(),
-			Subject:  pipelineHcl.GetDeclRange(),
-		}}
-	}
-
-	diags := m.addReferenceValue(pipelineHcl, pCty)
-	if diags.HasErrors() {
-		return diags
-	}
-
-	// remove this resource from unparsed blocks
-	delete(m.UnresolvedBlocks, pipelineHcl.Name())
-
-	m.RebuildEvalContext()
-	return nil
-}
-
-func (m *ModParseContext) AddTrigger(trigger *modconfig.Trigger) hcl.Diagnostics {
-
-	// Split and get the last part for pipeline name
-	parts := strings.Split(trigger.Name(), ".")
-	triggerNameOnly := parts[len(parts)-1]
-
-	// we don't add the trigger in the reference values unlike pipeline, but this seems to work?
-	m.TriggerHcls[triggerNameOnly] = trigger
-
-	// remove this resource from unparsed blocks
-	delete(m.UnresolvedBlocks, trigger.Name())
-
-	m.RebuildEvalContext()
-	return nil
 }
 
 // LoadVariablesOnly returns whether we are ONLY loading variables
@@ -944,7 +868,7 @@ func (m *ModParseContext) SetBlockTypeExclusions(blockTypes ...string) {
 	}
 }
 
-// SetIncludeLateBindingResources sets whether connections and notifiers should be included in the eval context
+// SetIncludeLateBindingResources sets whether connections be included in the eval context
 // and rebuilds the eval context
 func (m *ModParseContext) SetIncludeLateBindingResources(include bool) {
 	// this is only relevant if we support late binding resources

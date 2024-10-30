@@ -16,17 +16,18 @@ type ModTreeItemImpl struct {
 	// required to allow partial decoding
 	ModTreeItemRemain hcl.Body `hcl:",remain" json:"-"`
 
-	Mod              *Mod     `cty:"mod" json:"-"`
+	// auto cty serialisation fails with an NRE for mod struct so we manually serialise
+	Mod              *Mod     `cty:"-" json:"-"`
 	Database         *string  `cty:"database" hcl:"database" json:"database,omitempty"`
 	SearchPath       []string `cty:"search_path" hcl:"search_path,optional" json:"search_path,omitempty"`
 	SearchPathPrefix []string `cty:"search_path_prefix" hcl:"search_path_prefix,optional" json:"search_path_prefix,omitempty"`
 
-	Paths []NodePath `json:"path,omitempty"`
+	Paths    []NodePath    `json:"path,omitempty"`
+	Children []ModTreeItem `json:"-"`
 
 	// node may have multiple parents
 	// use a map to avoid dupes
-	parents  map[string]ModTreeItem
-	children []ModTreeItem
+	parents map[string]ModTreeItem
 }
 
 func NewModTreeItemImpl(block *hcl.Block, mod *Mod, shortName string) ModTreeItemImpl {
@@ -60,7 +61,15 @@ func (b *ModTreeItemImpl) GetParents() []ModTreeItem {
 
 // GetChildren implements ModTreeItem
 func (b *ModTreeItemImpl) GetChildren() []ModTreeItem {
-	return b.children
+	return b.Children
+}
+
+func (b *ModTreeItemImpl) SetChildren(children []ModTreeItem) {
+	b.Children = children
+}
+
+func (b *ModTreeItemImpl) AddChild(children ...ModTreeItem) {
+	b.Children = append(b.Children, children...)
 }
 
 func (b *ModTreeItemImpl) GetPaths() []NodePath {
@@ -94,7 +103,7 @@ func (b *ModTreeItemImpl) GetDatabase() *string {
 	// if we have a parent, ask for its database
 	// (stop when we get to the mod - the mod database property has lower precedence)
 	if len(b.parents) > 0 {
-		if parent := b.GetParents()[0]; parent.BlockType() != schema.BlockTypeMod {
+		if parent := b.GetParents()[0]; parent.GetBlockType() != schema.BlockTypeMod {
 			return parent.GetDatabase()
 		}
 	}
@@ -110,7 +119,7 @@ func (b *ModTreeItemImpl) GetSearchPath() []string {
 	// if we have a parent, ask for its search path
 	// (stop when we get to the mod - the mod database property has lower precedence)
 	if len(b.parents) > 0 {
-		if parent := b.GetParents()[0]; parent.BlockType() != schema.BlockTypeMod {
+		if parent := b.GetParents()[0]; parent.GetBlockType() != schema.BlockTypeMod {
 			return parent.GetSearchPath()
 		}
 	}
@@ -126,7 +135,7 @@ func (b *ModTreeItemImpl) GetSearchPathPrefix() []string {
 	// if we have a parent, ask for its search path prefix
 	// (stop when we get to the mod - the mod database property has lower precedence)
 	if len(b.parents) > 0 {
-		if parent := b.GetParents()[0]; parent.BlockType() != schema.BlockTypeMod {
+		if parent := b.GetParents()[0]; parent.GetBlockType() != schema.BlockTypeMod {
 			return parent.GetSearchPath()
 		}
 	}
@@ -159,7 +168,18 @@ func (b *ModTreeItemImpl) CtyValue() (cty.Value, error) {
 	if b.disableCtySerialise {
 		return cty.Zero, nil
 	}
-	return cty_helpers.GetCtyValue(b)
+	val, err := cty_helpers.GetCtyValue(b)
+	if err != nil {
+		return cty.NilVal, err
+	}
+	vm := val.AsValueMap()
+	if b.Mod != nil {
+		vm["mod"], err = b.Mod.CtyValue()
+		if err != nil {
+			return cty.NilVal, err
+		}
+	}
+	return cty.ObjectVal(vm), nil
 }
 
 // GetShowData implements printers.Showable
@@ -202,5 +222,11 @@ func (b *ModTreeItemImpl) GetListData() *printers.RowData {
 }
 
 func (b *ModTreeItemImpl) IsDependencyResource() bool {
-	return b.GetMod().DependencyPath != nil
+	return b.GetMod().GetDependencyPath() != nil
+}
+
+func (b *ModTreeItemImpl) GetNestedStructs() []CtyValueProvider {
+	// return all nested structs - this is used to get the nested structs for the cty serialisation
+	// we return ourselves and our base structs
+	return append([]CtyValueProvider{b}, b.HclResourceImpl.GetNestedStructs()...)
 }

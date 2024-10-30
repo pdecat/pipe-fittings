@@ -19,7 +19,7 @@ func (i *ModInstaller) updateModFile() error {
 	}
 
 	oldRequire := i.oldRequire
-	newRequire := i.workspaceMod.Require
+	newRequire := i.workspaceMod.GetRequire()
 
 	// fill these requires in with empty requires
 	// so that we don't have to do nil checks everywhere
@@ -54,13 +54,13 @@ func (i *ModInstaller) updateModFile() error {
 	// strip blank lines
 	modData := []byte(helpers.TrimBlankLines(string(contents.Bytes())))
 
-	return os.WriteFile(i.workspaceMod.FilePath(), modData, 0644) //nolint:gosec // TODO: check file permission
+	return os.WriteFile(i.workspaceMod.GetFilePath(), modData, 0644) //nolint:gosec // TODO: check file permission
 }
 
 // loads the contents of the mod.sp file and wraps it with a thin wrapper
 // to assist in byte sequence manipulation
 func (i *ModInstaller) loadModFileBytes() (*ByteSequence, error) {
-	modFileBytes, err := os.ReadFile(i.workspaceMod.FilePath())
+	modFileBytes, err := os.ReadFile(i.workspaceMod.GetFilePath())
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (i *ModInstaller) buildChangeSetForRequireCreate(oldRequire *modconfig.Requ
 	// we don't have a require block at all
 	// let's create one to append to
 	body = f.Body().AppendNewBlock("require", nil).Body()
-	insertOffset = i.workspaceMod.DeclRange.End.Byte - 1
+	insertOffset = i.workspaceMod.GetDeclRange().End.Byte - 1
 
 	for _, mvc := range newRequire.Mods {
 		newBlock := i.createNewModRequireBlock(mvc)
