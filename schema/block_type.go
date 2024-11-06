@@ -298,6 +298,7 @@ var ValidResourceItemTypes = []string{
 	BlockTypeMod,
 	BlockTypeQuery,
 	BlockTypeControl,
+	BlockTypeDetection,
 	BlockTypeDetectionBenchmark,
 	BlockTypeBenchmark,
 	BlockTypeDashboard,
