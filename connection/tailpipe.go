@@ -122,8 +122,8 @@ func (c *TailpipeConnection) CtyValue() (cty.Value, error) {
 	return ctyValueForConnection(c)
 }
 
-func (c *TailpipeConnection) setFilters(f TailpipeDatabaseFilters) {
-	c.OverrideFilters = &f
+func (c *TailpipeConnection) setFilters(f *TailpipeDatabaseFilters) {
+	c.OverrideFilters = f
 }
 
 // resolve the active filters, either from the connection or the override
@@ -159,7 +159,7 @@ func (c *TailpipeConnection) getFilters() *TailpipeDatabaseFilters {
 }
 
 // option to set the filter for the connection
-func WithFilter(f TailpipeDatabaseFilters) ConnectionStringOpt {
+func WithFilter(f *TailpipeDatabaseFilters) ConnectionStringOpt {
 	return func(c ConnectionStringProvider) {
 		// if this connection supports time range, set it
 		if c, ok := c.(*TailpipeConnection); ok {
