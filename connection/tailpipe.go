@@ -71,9 +71,9 @@ func (c *TailpipeConnection) GetConnectionString(opts ...ConnectionStringOpt) (s
 
 	// see if we already have a connection string for these filters
 	filterKey := filters.String()
-	if connStr, ok := c.connectionStrings[filterKey]; ok {
-		slog.Info("GetConnectionString cache hit", "connectionString", connStr)
-		return connStr, nil
+	if connectionString, ok := c.connectionStrings[filterKey]; ok {
+		slog.Info("GetConnectionString cache hit", "connectionString", connectionString)
+		return connectionString, nil
 	}
 
 	// Invoke the "tailpipe connect" shell command and capture output
@@ -91,6 +91,8 @@ func (c *TailpipeConnection) GetConnectionString(opts ...ConnectionStringOpt) (s
 
 	// add to cache
 	c.connectionStrings[filterKey] = connectionString
+
+	slog.Info("GetConnectionString return4ed from tailpipe", "args", args, "connectionString", connectionString)
 
 	return connectionString, nil
 }
