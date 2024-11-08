@@ -30,7 +30,8 @@ type TailpipeConnection struct {
 
 func NewTailpipeConnection(shortName string, declRange hcl.Range) PipelingConnection {
 	return &TailpipeConnection{
-		ConnectionImpl: NewConnectionImpl(TailpipeConnectionType, shortName, declRange),
+		ConnectionImpl:    NewConnectionImpl(TailpipeConnectionType, shortName, declRange),
+		connectionStrings: make(map[string]string),
 	}
 }
 
