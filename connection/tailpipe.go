@@ -2,6 +2,7 @@ package connection
 
 import (
 	"context"
+	"log/slog"
 	"os/exec"
 	"slices"
 	"strings"
@@ -22,11 +23,9 @@ type TailpipeConnection struct {
 	// if an option is passed to GetConnectionString, it may override the From and To values
 	OverrideFilters *TailpipeDatabaseFilters
 
-	// store the current db filename, along with the db options used to create it
-	// when GetConnecitonString is called, if we have a db filename already _and the options are the same_
-	// then just return the existing filename
-	// if we do not have a filename, or the options are different, create a new filename
-
+	// store a maps of connection strings, keyed by the filters used to create the db
+	// this is to avoid creating a new connection string each time GetConnectionString is called, unless
+	connectionStrings map[string]string
 }
 
 func NewTailpipeConnection(shortName string, declRange hcl.Range) PipelingConnection {
@@ -54,7 +53,7 @@ func (c *TailpipeConnection) Validate() hcl.Diagnostics {
 	return nil
 }
 
-func (c *TailpipeConnection) GetConnectionString(opts ...ConnectionStringOpt) string {
+func (c *TailpipeConnection) GetConnectionString(opts ...ConnectionStringOpt) (string, error) {
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -69,6 +68,13 @@ func (c *TailpipeConnection) GetConnectionString(opts ...ConnectionStringOpt) st
 		args = append(args, "--to", to.Format(time.RFC3339))
 	}
 
+	// see if we already have a connection string for these filters
+	filterKey := filters.String()
+	if connStr, ok := c.connectionStrings[filterKey]; ok {
+		slog.Info("GetConnectionString cache hit", "connectionString", connStr)
+		return connStr, nil
+	}
+
 	// Invoke the "tailpipe connect" shell command and capture output
 	cmd := exec.Command("tailpipe", args...)
 
@@ -76,12 +82,16 @@ func (c *TailpipeConnection) GetConnectionString(opts ...ConnectionStringOpt) st
 	output, err := cmd.Output()
 	if err != nil {
 		// Handle the error, e.g., by returning an empty string or a specific error message
-		return "Error executing command"
+		return "", err
 	}
 
 	// Convert output to string, trim whitespace, and return as connection string
 	connectionString := strings.TrimSpace(string(output))
-	return connectionString
+
+	// add to cache
+	c.connectionStrings[filterKey] = connectionString
+
+	return connectionString, nil
 }
 
 func (c *TailpipeConnection) GetEnv() map[string]cty.Value {
@@ -190,4 +200,25 @@ func (o *TailpipeDatabaseFilters) Equals(other *TailpipeDatabaseFilters) bool {
 	}
 
 	return true
+}
+
+func (o *TailpipeDatabaseFilters) String() string {
+	var str strings.Builder
+	if len(o.Partitions) > 0 {
+		str.WriteString("partitions: ")
+		str.WriteString(strings.Join(o.Partitions, ","))
+	}
+	if len(o.Indexes) > 0 {
+		str.WriteString("indexes: ")
+		str.WriteString(strings.Join(o.Indexes, ","))
+	}
+	if o.From != nil {
+		str.WriteString("from: ")
+		str.WriteString(o.From.String())
+	}
+	if o.To != nil {
+		str.WriteString("to: ")
+		str.WriteString(o.To.String())
+	}
+	return str.String()
 }

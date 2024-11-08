@@ -34,7 +34,7 @@ type TimeRangeProvider interface {
 
 // ConnectionStringProvider is implemented by all connections which can provide a connection string
 type ConnectionStringProvider interface {
-	GetConnectionString(...ConnectionStringOpt) string
+	GetConnectionString(...ConnectionStringOpt) (string, error)
 }
 
 // SearchPathProvider is implemented by all connections which can provide a connection string
