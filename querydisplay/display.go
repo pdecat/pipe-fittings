@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -358,12 +360,14 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 			WidthMax: constants.MaxColumnWidth,
 		})
 	}
-
+	// TODO K DO NOT USE VIPER
 	t.SetColumnConfigs(colConfigs)
 	if viper.GetBool(pconstants.ArgHeader) {
 		t.AppendHeader(headers)
 	}
 
+	var firstPage sync.Once
+	tablePageSize := 2
 	// define a function to execute for each row
 	rowFunc := func(row []interface{}, result *queryresult.Result[T]) {
 		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
@@ -381,6 +385,22 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 			rowObj = append(rowObj, col)
 		}
 		t.AppendRow(rowObj)
+
+		if t.Length() == tablePageSize {
+			// write out the table to the buffer
+			t.Render()
+			tableString := outbuf.String()
+			firstPage.Do(func() {
+				colConfigs = updateColumnConfigs(colConfigs, tableString)
+			})
+
+			// page out the table
+			ShowPaged(ctx, outbuf.String())
+			// now reset the buffer
+			t.ResetRows()
+			// set the column configs (on really necessary for the second page, but does not harm
+			t.SetColumnConfigs(colConfigs)
+		}
 	}
 
 	// iterate each row, adding each to the table
@@ -394,6 +414,8 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 		//nolint:forbidigo // acceptable
 		fmt.Println()
 	}
+
+	// render any remaining data
 	// write out the table to the buffer
 	t.Render()
 
@@ -401,6 +423,45 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 	ShowPaged(ctx, outbuf.String())
 
 	return count, rowErrors
+}
+
+func updateColumnConfigs(configs []table.ColumnConfig, tableString string) []table.ColumnConfig {
+	// Split the table string into lines and read the first line
+	lines := strings.Split(tableString, "\n")
+	if len(lines) == 0 {
+		return configs
+	}
+
+	// Split the first line by '+' to get the column boundaries
+	columns := strings.Split(lines[0], "+")
+
+	// Calculate width of each column part (including spaces)
+	var columnWidths []int
+	for _, col := range columns {
+		if len(col) > 0 { // Exclude empty parts (e.g., start/end)
+			columnWidths = append(columnWidths, len(col))
+		}
+	}
+
+	// Update or create ColumnConfigs based on the calculated widths
+	for i, width := range columnWidths {
+		if i < len(configs) {
+			// Update existing config if it exists
+			configs[i].WidthMin = width
+			configs[i].WidthMax = width
+		} else {
+			// unexpected
+			slog.Warn("Unexpected number of columns in the table")
+			// Create a new config if needed
+			configs = append(configs, table.ColumnConfig{
+				Number:   i + 1,
+				WidthMin: width,
+				WidthMax: width,
+			})
+		}
+	}
+
+	return configs
 }
 
 type displayResultsFunc[T queryresult.TimingContainer] func(row []interface{}, result *queryresult.Result[T])
@@ -418,6 +479,7 @@ func IterateResults[T queryresult.TimingContainer](result *queryresult.Result[T]
 		displayResult(row.Data, result)
 		count++
 	}
+	displayResult(nil, result)
 	// we will not get here
 	return count, nil
 }

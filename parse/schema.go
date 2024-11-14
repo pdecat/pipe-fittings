@@ -173,16 +173,6 @@ var TpConfigBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var PluginBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       schema.BlockTypeRateLimiter,
-			LabelNames: []string{schema.LabelName},
-		},
-	},
-}
-
 var WorkspaceProfileBlockSchema = &hcl.BodySchema{
 
 	Blocks: []hcl.BlockHeaderSchema{
