@@ -341,10 +341,27 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
-	// the table
+	// Copy default style for the top, middle, and bottom segments
+	topStyle := table.StyleDefault
+	topStyle.Box.BottomSeparator = "aaa" // Remove bottom line for the top segment
+
+	middleStyle := table.StyleDefault
+	middleStyle.Box.TopSeparator = ""
+	middleStyle.Box.BottomSeparator = ""
+	middleStyle.Box.TopLeft = ""
+	middleStyle.Box.TopRight = ""
+	middleStyle.Box.BottomLeft = ""
+	middleStyle.Box.BottomRight = ""
+	middleStyle.Options.DrawBorder = false // Disable outer border for middle rows
+
+	bottomStyle := table.StyleDefault
+	bottomStyle.Box.TopSeparator = "" // Remove top line for the bottom segment
+	bottomStyle.Box.TopLeft = ""
+	bottomStyle.Box.TopRight = ""
+
 	t := table.NewWriter()
 	t.SetOutputMirror(outbuf)
-	t.SetStyle(table.StyleDefault)
+	t.SetStyle(topStyle)
 	t.Style().Format.Header = text.FormatDefault
 
 	var colConfigs []table.ColumnConfig
@@ -367,7 +384,7 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 	}
 
 	var firstPage sync.Once
-	tablePageSize := 2
+	tablePageSize := 10
 	// define a function to execute for each row
 	rowFunc := func(row []interface{}, result *queryresult.Result[T]) {
 		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
@@ -392,12 +409,16 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 			tableString := outbuf.String()
 			firstPage.Do(func() {
 				colConfigs = updateColumnConfigs(colConfigs, tableString)
+				t.SetStyle(middleStyle)
+				t.ResetHeaders()
+
 			})
 
 			// page out the table
 			ShowPaged(ctx, outbuf.String())
 			// now reset the buffer
 			t.ResetRows()
+			t.SetStyle(bottomStyle)
 			// set the column configs (on really necessary for the second page, but does not harm
 			t.SetColumnConfigs(colConfigs)
 		}
@@ -480,7 +501,7 @@ func IterateResults[T queryresult.TimingContainer](result *queryresult.Result[T]
 		count++
 	}
 	displayResult(nil, result)
-	// we will not get here
+
 	return count, nil
 }
 
