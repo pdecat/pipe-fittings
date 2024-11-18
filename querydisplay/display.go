@@ -40,7 +40,7 @@ func ShowOutput[T queryresult.TimingContainer](ctx context.Context, result *quer
 	case constants.OutputFormatLine:
 		rowCount, rowErrors = displayLine(ctx, result)
 	case constants.OutputFormatTable:
-		displayTable(ctx, result)
+		rowCount, rowErrors = displayTable(ctx, result)
 	}
 
 	return rowCount, rowErrors
