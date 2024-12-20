@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -64,5 +65,22 @@ func DisplayProfileData(op io.Writer) {
 		table.AppendBulk(data)
 		table.Render()
 	}
+}
 
+func DisplayProfileDataJsonl(op io.Writer) {
+	if shouldProfile() {
+		// Create a new JSON encoder
+		encoder := json.NewEncoder(op)
+
+		for _, logEntry := range Timing {
+			var itemData []string
+			itemData = append(itemData, logEntry.Operation)
+			itemData = append(itemData, logEntry.Interval.String())
+			itemData = append(itemData, logEntry.Cumulative.String())
+
+			if err := encoder.Encode(itemData); err != nil {
+				panic(err)
+			}
+		}
+	}
 }

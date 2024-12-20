@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
 	"io"
 	"log"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/turbot/pipe-fittings/app_specific"
 )
 
 type timeLog struct {
