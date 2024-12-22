@@ -23,7 +23,7 @@ var (
 	connectionCacheInitOnce sync.Once
 )
 
-func inMemoryInitialize(config *ristretto.Config) *InMemoryCache {
+func initializeInMemoryCache(config *ristretto.Config) *InMemoryCache {
 	if config == nil {
 		config = &ristretto.Config{
 			NumCounters: 100000,   // number of keys to track frequency
@@ -43,7 +43,7 @@ func inMemoryInitialize(config *ristretto.Config) *InMemoryCache {
 
 func GetCache() *InMemoryCache {
 	inMemoryCacheInitOnce.Do(func() {
-		inMemoryInitialize(nil)
+		initializeInMemoryCache(nil)
 	})
 	return inMemoryCache
 }
@@ -102,6 +102,17 @@ func ResetCredentialCache() {
 func ResetConnectionCache() {
 	connectionCache = nil
 	initializeConnectionCache()
+}
+
+func ResetInMemoryCache() {
+	inMemoryCache = nil
+	initializeInMemoryCache(nil)
+}
+
+func ResetAllCache() {
+	ResetCredentialCache()
+	ResetConnectionCache()
+	ResetInMemoryCache()
 }
 
 func (cache *InMemoryCache) SetWithTTL(key string, value interface{}, ttl time.Duration) bool {

@@ -2,6 +2,12 @@
 
 Shared Pipes Component
 
+## v1.7.1 [tbd]
+
+_What's new_
+
+* Added `ResetCache` function to reset the all in-memory cache.
+
 ## v1.7.0 [2024-12-20]
 
 _What's new_
