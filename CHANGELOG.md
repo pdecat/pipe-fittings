@@ -2,6 +2,12 @@
 
 Shared Pipes Component
 
+## v1.7.2 [2024-12-23]
+
+_What's new_
+
+* Updated `golang.org/x/crypto` to v0.31.0.
+
 ## v1.7.1 [2024-12-23]
 
 _What's new_
