@@ -20,6 +20,7 @@ type SteampipeSnapshot struct {
 	Layout        *SnapshotTreeNode        `json:"layout"`
 	FileNameRoot  string                   `json:"-"`
 	Title         string                   `json:"-"`
+	Metadata      map[string]interface{}   `json:"metadata"`
 }
 
 // IsExportSourceData implements ExportSourceData
