@@ -80,12 +80,16 @@ func (c *SqliteConnection) CtyValue() (cty.Value, error) {
 	return ctyValueForConnection(c)
 }
 
-func (c *SqliteConnection) GetConnectionString() string {
-	if c.ConnectionString != nil {
-		return *c.ConnectionString
+func (c *SqliteConnection) GetConnectionString(opts ...ConnectionStringOpt) (string, error) {
+	for _, opt := range opts {
+		opt(c)
 	}
 
-	return fmt.Sprintf("sqlite://%s", c.getFileName())
+	if c.ConnectionString != nil {
+		return *c.ConnectionString, nil
+	}
+
+	return fmt.Sprintf("sqlite://%s", c.getFileName()), nil
 }
 
 func (c *SqliteConnection) getFileName() any {

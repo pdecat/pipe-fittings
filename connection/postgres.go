@@ -119,9 +119,13 @@ func validateSSlMode(s string, declRange *hcl.Range) hcl.Diagnostics {
 	}
 }
 
-func (c *PostgresConnection) GetConnectionString() string {
+func (c *PostgresConnection) GetConnectionString(opts ...ConnectionStringOpt) (string, error) {
+	for _, opt := range opts {
+		opt(c)
+	}
+
 	if c.ConnectionString != nil {
-		return *c.ConnectionString
+		return *c.ConnectionString, nil
 	}
 
 	// db, username, host and port all have default values if not set
@@ -131,7 +135,7 @@ func (c *PostgresConnection) GetConnectionString() string {
 		c.getHost(),
 		c.getPort(),
 		c.Password, c.SslMode)
-	return connString
+	return connString, nil
 }
 
 func (c *PostgresConnection) GetEnv() map[string]cty.Value {
@@ -237,7 +241,7 @@ func postgresConnectionParamsToEnvValueMap(db, username, host string, port int, 
 	return envVars
 }
 
-// TODO avoid the need for this
+// get port, apply default if not set
 func (c *PostgresConnection) getPort() int {
 	if c.Port != nil {
 		return *c.Port
@@ -245,6 +249,7 @@ func (c *PostgresConnection) getPort() int {
 	return defaultPostgresPort
 }
 
+// get host, apply default if not set
 func (c *PostgresConnection) getHost() string {
 	if c.Host != nil {
 		return *c.Host
@@ -252,6 +257,7 @@ func (c *PostgresConnection) getHost() string {
 	return defaultPostgresHost
 }
 
+// get db name, apply default if not set
 func (c *PostgresConnection) getDbName() string {
 	if c.DbName != nil {
 		return *c.DbName
@@ -259,6 +265,7 @@ func (c *PostgresConnection) getDbName() string {
 	return defaultPostgresDbName
 }
 
+// get user name, apply default if not set
 func (c *PostgresConnection) getUserName() string {
 	if c.UserName != nil {
 		return *c.UserName

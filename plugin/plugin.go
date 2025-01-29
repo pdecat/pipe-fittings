@@ -9,19 +9,29 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// TODO what is db tag for https://github.com/turbot/pipe-fittings/issues/615
+
 type Plugin struct {
-	Instance        string         `hcl:"name,label" db:"plugin_instance"`
-	Alias           string         `hcl:"source,optional"`
-	MemoryMaxMb     *int           `hcl:"memory_max_mb,optional" db:"memory_max_mb"`
-	StartTimeout    *int           `hcl:"start_timeout,optional"`
-	Limiters        []*RateLimiter `hcl:"limiter,block" db:"limiters"`
-	FileName        *string        `db:"file_name"`
-	StartLineNumber *int           `db:"start_line_number"`
-	EndLineNumber   *int           `db:"end_line_number"`
+	Instance        string         `hcl:"name,label" db:"plugin_instance" cty:"plugin_instance"`
+	Alias           string         `hcl:"source,optional" cty:"source"`
+	MemoryMaxMb     *int           `hcl:"memory_max_mb,optional" db:"memory_max_mb" cty:"memory_max_mb"`
+	StartTimeout    *int           `hcl:"start_timeout,optional" cty:"start_timeout"`
+	Limiters        []*RateLimiter `hcl:"limiter,block" db:"limiters" cty:"limiters"`
+	FileName        *string        `db:"file_name" cty:"file_name"`
+	StartLineNumber *int           `db:"start_line_number" cty:"start_line_number"`
+	EndLineNumber   *int           `db:"end_line_number" cty:"end_line_number"`
 	// the image ref as a string
-	Plugin string `db:"plugin"`
+	Plugin string `db:"plugin" cty:"plugin"`
 	// the actual plugin version, as a string
-	Version string `db:"version"`
+	Version string `db:"version" cty:"version"`
+}
+
+func NewPlugin(name string) *Plugin {
+	return &Plugin{
+		Instance: name,
+		Alias:    name,
+		Plugin:   ResolvePluginImageRef(name),
+	}
 }
 
 // NewImplicitPlugin creates a default plugin config struct for a connection

@@ -2,10 +2,10 @@ package connection
 
 import (
 	"context"
-	"strings"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/zclconf/go-cty/cty"
+	"strings"
 )
 
 type PipelingConnection interface {
@@ -26,9 +26,21 @@ type PipelingConnection interface {
 	SetTtl(int)
 }
 
+type ConnectionStringOpt func(ConnectionStringProvider)
+
+type TimeRangeProvider interface {
+	SetTimeRange(utils.TimeRange)
+}
+
 // ConnectionStringProvider is implemented by all connections which can provide a connection string
 type ConnectionStringProvider interface {
-	GetConnectionString() string
+	GetConnectionString(...ConnectionStringOpt) (string, error)
+}
+
+// DynamicConnectionStringProvider is implemented by all connections for which the connection string may change
+// (for example as a result of ConnectionStringOpts)
+type DynamicConnectionStringProvider interface {
+	IsDynamic()
 }
 
 // SearchPathProvider is implemented by all connections which can provide a connection string

@@ -10,6 +10,7 @@ import (
 )
 
 func ResolveChildrenFromNames(childNames []string, block *hcl.Block, supportedChildren []string, parseCtx *ModParseContext) ([]modconfig.ModTreeItem, hcl.Diagnostics) {
+	// TODO #validate validate all children are same type (i.e. we do not support detections and controls in same tree) https://github.com/turbot/pipe-fittings/issues/612
 	var diags hcl.Diagnostics
 	diags = checkForDuplicateChildren(childNames, block)
 	if diags.HasErrors() {

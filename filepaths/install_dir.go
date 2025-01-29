@@ -2,10 +2,10 @@ package filepaths
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
@@ -21,8 +21,6 @@ const (
 	legacyStateFileName          = "update-check.json"
 	availableVersionsFileName    = "available_versions.json"
 	legacyNotificationsFileName  = "notifications.json"
-
-	PipesComponentInternal = "internal"
 )
 
 func ensureInstallSubDir(dirName string) string {
@@ -43,9 +41,14 @@ func installSubDir(dirName string) string {
 	return filepath.Join(app_specific.InstallDir, dirName)
 }
 
-// EnsureTemplateDir returns the path to the templates directory (creates if missing)
-func EnsureTemplateDir() string {
+// EnsureControlTemplateDir returns the path to the templates directory (creates if missing)
+func EnsureControlTemplateDir() string {
 	return ensureInstallSubDir(filepath.Join("check", "templates"))
+}
+
+// EnsureDetectionTemplateDir returns the path to the detection templates directory (creates if missing)
+func EnsureDetectionTemplateDir() string {
+	return ensureInstallSubDir(filepath.Join("check", "detection_templates"))
 }
 
 // EnsureConfigDir returns the path to the config directory (creates if missing)

@@ -73,29 +73,12 @@ var missingVariableErrors = []string{
 //	return diags
 //}
 
-func AddResourceToMod(resource modconfig.HclResource, block *hcl.Block, parseCtx *ModParseContext) hcl.Diagnostics {
-	if !shouldAddToMod(resource, block, parseCtx) {
+func AddResourceToMod(resource modconfig.HclResource, block *hcl.Block, decoder Decoder, parseCtx *ModParseContext) hcl.Diagnostics {
+	if !decoder.ShouldAddToMod(resource, block, parseCtx) {
 		return nil
 	}
 	return parseCtx.CurrentMod.AddResource(resource)
 
-}
-
-// TODO K move to decoder
-func shouldAddToMod(resource modconfig.HclResource, block *hcl.Block, parseCtx *ModParseContext) bool {
-	switch resource.(type) {
-	// do not add mods, withs
-	case *modconfig.Mod /*, *powerpipe2.DashboardWith*/ :
-		return false
-
-	//case *powerpipe2.DashboardCategory, *powerpipe2.DashboardInput:
-	//	// if this is a dashboard category or dashboard input, only add top level blocks
-	//	// this is to allow nested categories/inputs to have the same name as top level categories
-	//	// (nested inputs are added by Dashboard.InitInputs)
-	//	return parseCtx.IsTopLevelBlock(block)
-	default:
-		return true
-	}
 }
 
 func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (*modconfig.Mod, *DecodeResult) {
@@ -113,12 +96,12 @@ func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (
 	moreDiags := DecodeHclBody(remain, evalCtx, mod, mod)
 	res.HandleDecodeDiags(moreDiags)
 
-	connectionString, searchPath, searchPathPrefix, moreDiags := ResolveConnectionString(databaseContent, evalCtx)
+	connectionStringProvider, searchPath, searchPathPrefix, moreDiags := ResolveConnectionString(databaseContent, evalCtx)
 	res.HandleDecodeDiags(moreDiags)
 
 	// if connection string or search path was specified (by the mod referencing a connection), set them
-	if connectionString != nil {
-		mod.SetDatabase(connectionString)
+	if connectionStringProvider != nil {
+		mod.SetDatabase(connectionStringProvider)
 	}
 	if searchPath != nil {
 		mod.SetSearchPath(searchPath)
@@ -142,8 +125,8 @@ func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (
 //	return require, diags
 //}
 
-func ResolveConnectionString(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (cs *string, searchPath, searchPathPrefix []string, diags hcl.Diagnostics) {
-	var connectionString string
+func ResolveConnectionString(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (csp connection.ConnectionStringProvider, searchPath, searchPathPrefix []string, diags hcl.Diagnostics) {
+
 	attr, exists := content.Attributes[schema.AttributeTypeDatabase]
 	if !exists {
 		return nil, searchPath, searchPathPrefix, diags
@@ -165,8 +148,9 @@ func ResolveConnectionString(content *hcl.BodyContent, evalCtx *hcl.EvalContext)
 		for _, dep := range res.Depends {
 			for _, traversal := range dep.Traversals {
 				depName := hclhelpers.TraversalAsString(traversal)
+				csp = connection.NewConnectionString(depName)
 				if strings.HasPrefix(depName, "connection.") {
-					return &depName, searchPath, searchPathPrefix, diags
+					return csp, searchPath, searchPathPrefix, diags
 				}
 			}
 		}
@@ -176,7 +160,7 @@ func ResolveConnectionString(content *hcl.BodyContent, evalCtx *hcl.EvalContext)
 	}
 	// check if this is a connection string or a connection
 	if dbValue.Type() == cty.String {
-		connectionString = dbValue.AsString()
+		csp = connection.NewConnectionString(dbValue.AsString())
 	} else {
 		// if this is a temporary connection, ignore (this will only occur during the variable parsing phase)
 		if dbValue.Type().HasAttribute("temporary") {
@@ -193,10 +177,11 @@ func ResolveConnectionString(content *hcl.BodyContent, evalCtx *hcl.EvalContext)
 				}}
 		}
 
-		// the connection type must support connection strings
-		if conn, ok := c.(connection.ConnectionStringProvider); ok {
-			connectionString = conn.GetConnectionString()
-		} else {
+		var ok bool
+		csp, ok = c.(connection.ConnectionStringProvider)
+		if !ok {
+			// the connection type must support connection strings
+
 			slog.Warn("connection does not support connection string", "db", c)
 			return nil, searchPath, searchPathPrefix, hcl.Diagnostics{
 				&hcl.Diagnostic{
@@ -210,7 +195,7 @@ func ResolveConnectionString(content *hcl.BodyContent, evalCtx *hcl.EvalContext)
 		}
 	}
 
-	return &connectionString, searchPath, searchPathPrefix, diags
+	return csp, searchPath, searchPathPrefix, diags
 }
 
 func DecodeProperty(content *hcl.BodyContent, property string, dest interface{}, evalCtx *hcl.EvalContext) hcl.Diagnostics {

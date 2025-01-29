@@ -12,7 +12,9 @@ const (
 	BlockTypeQuery          = "query"
 	BlockTypeControl        = "control"
 	BlockTypeBenchmark      = "benchmark"
+	BlockTypeDetection      = "detection"
 	BlockTypeDashboard      = "dashboard"
+	BlockTypeFormat         = "format"
 	BlockTypeContainer      = "container"
 	BlockTypeChart          = "chart"
 	BlockTypeCard           = "card"
@@ -57,13 +59,14 @@ const (
 	BlockTypeOption            = "option"
 	BlockTypeCapture           = "capture"
 	BlockTypeMethod            = "method"
+	BlockTypeSource            = "source"
 
 	AttributeTypeValue   = "value"
 	AttributeTypeType    = "type"
 	AttributeTypeDefault = "default"
 	AttributeTypeEnum    = "enum"
 	AttributeTypeFormat  = "format"
-	
+
 	AttributeTypeSensitive = "sensitive"
 	// Pipeline param block
 	AttributeTypeOptional = "optional"
@@ -236,8 +239,11 @@ const (
 	AttributeArgs        = "args"
 	AttributeQuery       = "query"
 
-	AttributeVar   = "var"
-	AttributeLocal = "local"
+	AttributeVar        = "var"
+	AttributeLocal      = "local"
+	AttributeConnection = "connection"
+	AttributeFormat     = "format"
+	AttributeType       = "type"
 
 	AttributeEach = "each"
 	AttributeKey  = "key"
@@ -248,6 +254,7 @@ var QueryProviderBlocks = []string{
 	BlockTypeCard,
 	BlockTypeChart,
 	BlockTypeControl,
+	BlockTypeDetection,
 	BlockTypeEdge,
 	BlockTypeFlow,
 	BlockTypeGraph,
@@ -274,6 +281,7 @@ var ReferenceBlocks = []string{
 	BlockTypeControl,
 	BlockTypeBenchmark,
 	BlockTypeDashboard,
+	BlockTypeDetection,
 	BlockTypeContainer,
 	BlockTypeCard,
 	BlockTypeChart,
@@ -293,6 +301,7 @@ var ValidResourceItemTypes = []string{
 	BlockTypeMod,
 	BlockTypeQuery,
 	BlockTypeControl,
+	BlockTypeDetection,
 	BlockTypeBenchmark,
 	BlockTypeDashboard,
 	BlockTypeContainer,

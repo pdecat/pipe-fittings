@@ -3,6 +3,7 @@ package parse
 import (
 	"fmt"
 	"log/slog"
+	"reflect"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -15,7 +16,7 @@ import (
 	"github.com/turbot/pipe-fittings/workspace_profile"
 )
 
-func LoadWorkspaceProfiles[T workspace_profile.WorkspaceProfile](workspaceProfilePath string) (profileMap map[string]T, err error) {
+func LoadWorkspaceProfiles[T workspace_profile.WorkspaceProfile](workspaceProfilePath string, opts ...ParseHclOpt) (profileMap map[string]T, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -39,12 +40,12 @@ func LoadWorkspaceProfiles[T workspace_profile.WorkspaceProfile](workspaceProfil
 
 	fileData, diags := LoadFileData(configPaths...)
 	if diags.HasErrors() {
-		return nil, error_helpers.HclDiagsToError("Failed to load workspace profiles", diags)
+		return nil, error_helpers.HclDiagsToError("Failed to load config", diags)
 	}
 
-	body, diags := ParseHclFiles(fileData)
+	body, diags := ParseHclFiles(fileData, opts...)
 	if diags.HasErrors() {
-		return nil, error_helpers.HclDiagsToError("Failed to load workspace profiles", diags)
+		return nil, error_helpers.HclDiagsToError("Failed to load config", diags)
 	}
 
 	// identify the config schema to use
@@ -53,7 +54,8 @@ func LoadWorkspaceProfiles[T workspace_profile.WorkspaceProfile](workspaceProfil
 	switch any(temp).(type) {
 	case *workspace_profile.FlowpipeWorkspaceProfile:
 		schema = FlowpipeConfigBlockSchema
-
+	case *workspace_profile.TailpipeWorkspaceProfile:
+		schema = TailpipeConfigBlockSchema
 	case *workspace_profile.PowerpipeWorkspaceProfile:
 		schema = PowerpipeConfigBlockSchema
 	case *workspace_profile.SteampipeWorkspaceProfile:
@@ -63,17 +65,17 @@ func LoadWorkspaceProfiles[T workspace_profile.WorkspaceProfile](workspaceProfil
 		// unexpected type
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("unexpected workspace profile type %s", temp.ShortName()),
+			Summary:  fmt.Sprintf("unexpected workspace profile type %s", reflect.TypeOf(temp).Name()),
 		})
 	}
 	if diags.HasErrors() {
-		return nil, error_helpers.HclDiagsToError("Failed to load workspace profiles", diags)
+		return nil, error_helpers.HclDiagsToError("Failed to load config", diags)
 	}
 
 	// do a partial decode
 	content, diags := body.Content(schema)
 	if diags.HasErrors() {
-		return nil, error_helpers.HclDiagsToError("Failed to load workspace profiles", diags)
+		return nil, error_helpers.HclDiagsToError("Failed to load config", diags)
 	}
 	parseCtx := NewWorkspaceProfileParseContext[T](workspaceProfilePath)
 	parseCtx.SetDecodeContent(content, fileData)

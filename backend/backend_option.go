@@ -39,15 +39,15 @@ func (c SearchPathConfig) String() string {
 	return fmt.Sprintf("search_path_prefix=%v", c.SearchPathPrefix)
 }
 
-type ConnectConfig struct {
+type BackendConfig struct {
 	MaxConnLifeTime  time.Duration
 	MaxConnIdleTime  time.Duration
 	MaxOpenConns     int
 	SearchPathConfig SearchPathConfig
 }
 
-func NewConnectConfig(opts []ConnectOption) *ConnectConfig {
-	c := &ConnectConfig{
+func NewBackendConfig(opts []BackendOption) *BackendConfig {
+	c := &BackendConfig{
 		MaxConnLifeTime: DefaultMaxConnLifeTime,
 		MaxConnIdleTime: DefaultMaxConnIdleTime,
 		MaxOpenConns:    DefaultMaxOpenConns,
@@ -58,10 +58,10 @@ func NewConnectConfig(opts []ConnectOption) *ConnectConfig {
 	return c
 }
 
-type ConnectOption func(*ConnectConfig)
+type BackendOption func(*BackendConfig)
 
-func WithConfig(other *ConnectConfig) ConnectOption {
-	return func(c *ConnectConfig) {
+func WithConfig(other *BackendConfig) BackendOption {
+	return func(c *BackendConfig) {
 		c.SearchPathConfig = other.SearchPathConfig
 		c.MaxConnLifeTime = other.MaxConnLifeTime
 		c.MaxConnIdleTime = other.MaxConnIdleTime
@@ -72,8 +72,8 @@ func WithConfig(other *ConnectConfig) ConnectOption {
 // WithSearchPathConfig sets the search path to use when connecting to the database.
 // If a prefix is also set, the search path will be resolved to the first matching
 // schema in the search path. Only applies if the backend is postgres
-func WithSearchPathConfig(config SearchPathConfig) ConnectOption {
-	return func(c *ConnectConfig) {
+func WithSearchPathConfig(config SearchPathConfig) BackendOption {
+	return func(c *BackendConfig) {
 		c.SearchPathConfig = config
 	}
 }

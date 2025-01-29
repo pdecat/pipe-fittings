@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -24,6 +25,7 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/queryresult"
 	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
+	"github.com/turbot/pipe-fittings/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -81,6 +83,38 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 		t.AppendRow(rowObj, rowConfig)
 	}
 	t.Render()
+}
+
+// show table using text/tabwriter
+func ShowTable(headers []string, rows [][]string, opts *ShowWrappedTableOptions) {
+	if opts == nil {
+		opts = &ShowWrappedTableOptions{}
+	}
+
+	// Use the provided OutputMirror or default to os.Stdout
+	writer := opts.OutputMirror
+	if writer == nil {
+		writer = os.Stdout
+	}
+
+	// Create a tabwriter
+	tw := tabwriter.NewWriter(writer, 1, 1, 4, ' ', 0)
+
+	// Prepare the headers
+	headerLine := strings.Join(headers, "\t")
+	fmt.Fprintln(tw, headerLine) //nolint:forbidigo // ui output
+
+	// Process rows
+	for _, row := range rows {
+		// Join the row into a tab-delimited string
+		rowLine := strings.Join(row, "\t")
+		fmt.Fprintln(tw, rowLine) //nolint:forbidigo // ui output
+	}
+
+	// Flush the writer to render the table
+	if err := tw.Flush(); err != nil {
+		fmt.Printf("Error flushing tabwriter: %v\n", err) //nolint:forbidigo // ui output
+	}
 }
 
 func GetMaxCols() int {
@@ -325,15 +359,19 @@ func displayLine[T queryresult.TimingContainer](ctx context.Context, result *que
 	}
 
 	// call this function for each row
-	count, err := IterateResults(result, rowFunc)
+	var err error
+	rowCount, err = IterateResults(result, rowFunc)
 	if err != nil {
 		error_helpers.ShowError(ctx, err)
 		rowErrors++
 		return 0, rowErrors
 	}
 
-	return count, rowErrors
+	return rowCount, rowErrors
 }
+
+// tables are buffered before rendering so limit the display to the first 10000 rows
+const maxTableDisplayRows = 10000
 
 func displayTable[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T]) (rowCount, rowErrors int) {
 	// the buffer to put the output data in
@@ -364,8 +402,16 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 		t.AppendHeader(headers)
 	}
 
+	// how may rows are we displaying (max 10000)
+	displayRowCount := 0
+
 	// define a function to execute for each row
 	rowFunc := func(row []interface{}, result *queryresult.Result[T]) {
+		if displayRowCount >= maxTableDisplayRows {
+			return
+		}
+		displayRowCount++
+
 		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
@@ -399,6 +445,13 @@ func displayTable[T queryresult.TimingContainer](ctx context.Context, result *qu
 
 	// page out the table
 	ShowPaged(ctx, outbuf.String())
+
+	status := fmt.Sprintf("%s rows", utils.HumanizeNumber(count))
+	if displayRowCount >= maxTableDisplayRows {
+		status += fmt.Sprintf(" (%s shown)", utils.HumanizeNumber(maxTableDisplayRows))
+	}
+	//nolint:forbidigo // acceptable
+	fmt.Println(status)
 
 	return count, rowErrors
 }
