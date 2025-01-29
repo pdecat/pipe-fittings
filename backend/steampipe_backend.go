@@ -7,9 +7,9 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/plugin"
-	"github.com/turbot/pipe-fittings/sperr"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/plugin"
+	"github.com/turbot/pipe-fittings/v2/sperr"
 )
 
 type SteampipeBackend struct {

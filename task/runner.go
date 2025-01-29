@@ -3,20 +3,22 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/logs"
 	"log/slog"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/turbot/pipe-fittings/v2/logs"
+
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/installationstate"
-	// "github.com/turbot/pipe-fittings/installationstate"
-	// "github.com/turbot/pipe-fittings/plugin"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/error_helpers"
+	"github.com/turbot/pipe-fittings/v2/filepaths"
+	"github.com/turbot/pipe-fittings/v2/installationstate"
+
+	// "github.com/turbot/pipe-fittings/v2/installationstate"
+	// "github.com/turbot/pipe-fittings/v2/plugin"
+	"github.com/turbot/pipe-fittings/v2/utils"
 )
 
 const minimumDurationBetweenChecks = 24 * time.Hour

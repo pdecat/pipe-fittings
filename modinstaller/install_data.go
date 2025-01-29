@@ -2,9 +2,10 @@ package modinstaller
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/perr"
-	"github.com/turbot/pipe-fittings/versionmap"
+
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	"github.com/turbot/pipe-fittings/v2/perr"
+	"github.com/turbot/pipe-fittings/v2/versionmap"
 )
 
 type InstallData struct {

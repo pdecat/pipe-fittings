@@ -3,11 +3,12 @@ package querydisplay
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/pipe-fittings/queryresult"
 	"time"
 
+	"github.com/turbot/pipe-fittings/v2/queryresult"
+
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 // columnNames builds a list of name from a slice of column defs - respecting the original name if present

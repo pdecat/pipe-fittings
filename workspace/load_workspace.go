@@ -2,13 +2,14 @@ package workspace
 
 import (
 	"context"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/utils"
 	"log/slog"
 	"time"
 
-	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	"github.com/turbot/pipe-fittings/v2/utils"
+
+	"github.com/turbot/pipe-fittings/v2/error_helpers"
 )
 
 func LoadWorkspacePromptingForVariables(ctx context.Context, workspacePath string, opts ...LoadWorkspaceOption) (*Workspace, error_helpers.ErrorAndWarnings) {

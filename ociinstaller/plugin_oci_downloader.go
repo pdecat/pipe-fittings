@@ -2,10 +2,11 @@ package ociinstaller
 
 import (
 	"fmt"
-	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
+
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 type PluginOciDownloader struct {

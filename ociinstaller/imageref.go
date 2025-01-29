@@ -2,8 +2,9 @@ package ociinstaller
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
 	"strings"
+
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 )
 
 const (

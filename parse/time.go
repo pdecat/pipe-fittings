@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 // ParseTime parses a time string into a time.Time object.

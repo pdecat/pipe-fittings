@@ -2,7 +2,7 @@ package app_specific_connection
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/pipe-fittings/connection"
+	"github.com/turbot/pipe-fittings/v2/connection"
 )
 
 type ConnectionFunc func(string, hcl.Range) connection.PipelingConnection

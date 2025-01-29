@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/pipe-fittings/workspace_profile"
+	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	"github.com/zclconf/go-cty/cty"
 )
 

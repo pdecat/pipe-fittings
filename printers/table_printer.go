@@ -3,9 +3,10 @@ package printers
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/sanitize"
 	"io"
 	"text/tabwriter"
+
+	"github.com/turbot/pipe-fittings/v2/sanitize"
 )
 
 // Inspired by Kubernetes

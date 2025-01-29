@@ -1,8 +1,9 @@
 package plugin
 
 import (
-	"github.com/turbot/pipe-fittings/constants"
 	"runtime"
+
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 // UpdateRequired determines if the latest version in a "stream"

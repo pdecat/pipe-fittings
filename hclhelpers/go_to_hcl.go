@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/turbot/pipe-fittings/perr"
+	"github.com/turbot/pipe-fittings/v2/perr"
 	"github.com/zclconf/go-cty/cty"
 )
 

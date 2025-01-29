@@ -2,7 +2,7 @@ package error_helpers
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/pipe-fittings/sperr"
+	"github.com/turbot/pipe-fittings/v2/sperr"
 	"golang.org/x/exp/slog"
 )
 

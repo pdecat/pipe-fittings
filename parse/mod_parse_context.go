@@ -11,17 +11,17 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/cache"
-	"github.com/turbot/pipe-fittings/connection"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/inputvars"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/perr"
-	"github.com/turbot/pipe-fittings/schema"
-	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/pipe-fittings/versionmap"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+	"github.com/turbot/pipe-fittings/v2/cache"
+	"github.com/turbot/pipe-fittings/v2/connection"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/hclhelpers"
+	"github.com/turbot/pipe-fittings/v2/inputvars"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	"github.com/turbot/pipe-fittings/v2/perr"
+	"github.com/turbot/pipe-fittings/v2/schema"
+	"github.com/turbot/pipe-fittings/v2/utils"
+	"github.com/turbot/pipe-fittings/v2/versionmap"
 	"github.com/turbot/terraform-components/terraform"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -488,11 +488,11 @@ func (m *ModParseContext) RebuildEvalContext() {
 	if m.supportLateBinding && m.includeLateBindingResourcesInEvalContext {
 		if len(m.PipelingConnections) > 0 {
 			cacheKey := m.ParseContext.RootEvalPath + ":pipeling_connections"
-			connMapI, found :=  cache.GetCache().Get(cacheKey)
+			connMapI, found := cache.GetCache().Get(cacheKey)
 			if !found {
 				connMap := BuildTemporaryConnectionMapForEvalContext(m.PipelingConnections)
 				variables[schema.BlockTypeConnection] = cty.ObjectVal(connMap)
-				cache.GetCache().SetWithTTL(cacheKey, connMap, 24 * time.Hour)
+				cache.GetCache().SetWithTTL(cacheKey, connMap, 24*time.Hour)
 			} else {
 				connMap := connMapI.(map[string]cty.Value)
 				variables[schema.BlockTypeConnection] = cty.ObjectVal(connMap)

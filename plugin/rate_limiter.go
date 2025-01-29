@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/v2/hclhelpers"
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	LimiterStatusOverridden = "overridden"
 )
 
-// TODO what are db tags for https://github.com/turbot/pipe-fittings/issues/615
+// TODO what are db tags for https://github.com/turbot/pipe-fittings/v2/issues/615
 type RateLimiter struct {
 	Name            string                 `hcl:"name,label" db:"name" cty:"name"`
 	BucketSize      *int64                 `hcl:"bucket_size,optional" db:"bucket_size" cty:"bucket_size"`

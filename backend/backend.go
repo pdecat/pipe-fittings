@@ -6,8 +6,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/queryresult"
-	"github.com/turbot/pipe-fittings/sperr"
+	"github.com/turbot/pipe-fittings/v2/queryresult"
+	"github.com/turbot/pipe-fittings/v2/sperr"
 )
 
 var ErrUnknownBackend = errors.New("unknown backend")

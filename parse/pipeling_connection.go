@@ -5,11 +5,11 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/turbot/pipe-fittings/app_specific_connection"
-	"github.com/turbot/pipe-fittings/connection"
-	"github.com/turbot/pipe-fittings/funcs"
-	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/app_specific_connection"
+	"github.com/turbot/pipe-fittings/v2/connection"
+	"github.com/turbot/pipe-fittings/v2/funcs"
+	"github.com/turbot/pipe-fittings/v2/hclhelpers"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -71,7 +71,7 @@ func DecodePipelingConnection(configPath string, block *hcl.Block) (connection.P
 
 // decodeConnectionImpl decodes the given block into a connection.ConnectionImpl and returns the remaining body.
 func decodeConnectionImpl(block *hcl.Block, evalCtx *hcl.EvalContext, connectionImpl *connection.ConnectionImpl) (hcl.Body, hcl.Diagnostics) {
-	
+
 	utils.LogTime(fmt.Sprintf("decode connectionImpl %s start", connectionImpl.FullName))
 
 	schema, err := hclhelpers.HclSchemaForStruct(connectionImpl)

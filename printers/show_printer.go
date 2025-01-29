@@ -3,16 +3,17 @@ package printers
 import (
 	"context"
 	"fmt"
-	"github.com/logrusorgru/aurora"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/sanitize"
 	"io"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/logrusorgru/aurora"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/v2/sanitize"
+
 	"github.com/spf13/viper"
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 type ShowPrinter[T any] struct{}

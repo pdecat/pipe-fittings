@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/connection"
+	"github.com/turbot/pipe-fittings/v2/connection"
 )
 
 // IsPipesWorkspaceConnectionString returns whether name is a cloud workspace identifier

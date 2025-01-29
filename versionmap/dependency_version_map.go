@@ -3,7 +3,7 @@ package versionmap
 import (
 	"sort"
 
-	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/xlab/treeprint"
 	"golang.org/x/exp/maps"
 )
