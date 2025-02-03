@@ -2,7 +2,7 @@ package constants
 
 import (
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 )
 
 // Original Steampipe values

@@ -4,12 +4,12 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/v2/hclhelpers"
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	"golang.org/x/exp/maps"
 )
 
-// TODO what is db tag for https://github.com/turbot/pipe-fittings/issues/615
+// TODO what is db tag for https://github.com/turbot/pipe-fittings/v2/issues/615
 
 type Plugin struct {
 	Instance        string         `hcl:"name,label" db:"plugin_instance" cty:"plugin_instance"`

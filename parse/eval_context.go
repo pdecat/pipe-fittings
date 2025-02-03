@@ -1,11 +1,12 @@
 package parse
 
 import (
-	"github.com/turbot/pipe-fittings/cty_helpers"
 	"log/slog"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/connection"
+	"github.com/turbot/pipe-fittings/v2/cty_helpers"
+
+	"github.com/turbot/pipe-fittings/v2/connection"
 	"github.com/zclconf/go-cty/cty"
 )
 

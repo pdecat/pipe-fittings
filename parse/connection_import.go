@@ -2,14 +2,15 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/modconfig"
 	"path"
+
+	"github.com/turbot/pipe-fittings/v2/modconfig"
 
 	filehelpers "github.com/turbot/go-kit/files"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/turbot/pipe-fittings/funcs"
+	"github.com/turbot/pipe-fittings/v2/funcs"
 	"github.com/zclconf/go-cty/cty"
 )
 

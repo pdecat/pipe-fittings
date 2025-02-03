@@ -1,9 +1,10 @@
 package inputvars
 
 import (
-	"github.com/turbot/pipe-fittings/app_specific"
 	"reflect"
 	"testing"
+
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 )
 
 func Test_sanitiseVariableNames(t *testing.T) {

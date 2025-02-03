@@ -11,8 +11,8 @@ import (
 
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/error_helpers"
 )
 
 // ShowPaged displays the `content` in a system dependent pager
@@ -25,7 +25,7 @@ func ShowPaged(ctx context.Context, content string) {
 }
 
 func isPagerNeeded(content string) bool {
-	// TODO use option, NOT viper https://github.com/turbot/pipe-fittings/issues/613
+	// TODO use option, NOT viper https://github.com/turbot/pipe-fittings/v2/issues/613
 	// only show pager in interactive mode
 	if !viper.GetBool(constants.ConfigKeyInteractive) {
 		return false

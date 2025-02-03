@@ -2,9 +2,9 @@ package modinstaller
 
 import (
 	"github.com/Masterminds/semver/v3"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/versionmap"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	"github.com/turbot/pipe-fittings/v2/versionmap"
 )
 
 // interface for easy unit testing

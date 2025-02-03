@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	versionfile2 "github.com/turbot/pipe-fittings/versionfile"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,9 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/utils"
-	putils "github.com/turbot/pipe-fittings/utils"
+	versionfile2 "github.com/turbot/pipe-fittings/v2/versionfile"
+
+	"github.com/turbot/pipe-fittings/v2/filepaths"
+	"github.com/turbot/pipe-fittings/v2/utils"
+	putils "github.com/turbot/pipe-fittings/v2/utils"
 )
 
 var versionFileUpdateLock = &sync.Mutex{}

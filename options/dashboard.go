@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 // Dashboard options are deprecated and removed. They are kept here for compatibility with old configurations.

@@ -2,13 +2,14 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
 	"reflect"
 
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/pipe-fittings/connection"
-	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/schema"
+	"github.com/turbot/pipe-fittings/v2/connection"
+	"github.com/turbot/pipe-fittings/v2/hclhelpers"
+	"github.com/turbot/pipe-fittings/v2/schema"
 	"github.com/zclconf/go-cty/cty"
 )
 

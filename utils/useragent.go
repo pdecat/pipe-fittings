@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
 	"io"
 	"net/http"
 	"net/url"
 	"runtime"
+
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 
 	"github.com/hashicorp/go-cleanhttp"
 )

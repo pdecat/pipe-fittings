@@ -2,14 +2,15 @@ package modconfig
 
 import (
 	"fmt"
-	filehelpers "github.com/turbot/go-kit/files"
 	"strings"
+
+	filehelpers "github.com/turbot/go-kit/files"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/versionhelpers"
+	"github.com/turbot/pipe-fittings/v2/error_helpers"
+	"github.com/turbot/pipe-fittings/v2/versionhelpers"
 	"github.com/zclconf/go-cty/cty"
 )
 

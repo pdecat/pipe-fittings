@@ -1,9 +1,10 @@
 package printers
 
 import (
-	"github.com/turbot/pipe-fittings/sanitize"
-	"github.com/turbot/pipe-fittings/utils"
 	"testing"
+
+	"github.com/turbot/pipe-fittings/v2/sanitize"
+	"github.com/turbot/pipe-fittings/v2/utils"
 )
 
 type showable2 struct {

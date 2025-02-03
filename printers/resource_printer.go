@@ -3,13 +3,14 @@ package printers
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/utils"
 	"io"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/v2/utils"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 // Inspired by Kubernetes

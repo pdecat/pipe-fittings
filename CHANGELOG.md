@@ -2,6 +2,27 @@
 
 Shared Pipes Component
 
+## v2.0.0 [tbd]
+
+* Add support for `tailpipe` and tailpipe detections within `powerpipe`
+* Remove flowpipe and powerpipe specific resources and move into their respective app repos. ([#603](https://github.com/turbot/pipe-fittings/issues/603)).
+* ConnectionStringFromConnectionName returns ConnectionStringProvider
+* DuckDBBackend installs and loads duckdb extensions from pipes extensions dir
+* Add TailpipeConnection, which invokes `tailpipe connect`, passing time range
+* Add TailpipeWorkspaceProfile
+* Add support for decoding Detection and DetectionBenchmark
+* Add reflect.InstanceOf to instantiate a an instance of a generic type
+* Add IsValidDir() to determine if a given path is an existing directory
+* Add SafeBoolEqual func
+* Add tailpipe hub API endpoint
+* Add hclhelpers.BlockRangeWithLabels
+* Add Add EnsurePipesDuckDbExtensionsDir
+* Add SqlFilter
+* Add ParseTime
+* Add UserConfirmationWithDefault
+* Limit table query output to 10000 rows
+
+
 ## v1.7.3 [2024-01-07]
 
 _What's new_

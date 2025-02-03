@@ -1,8 +1,8 @@
 package workspace
 
 import (
-	"github.com/turbot/pipe-fittings/connection"
-	"github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/v2/connection"
+	"github.com/turbot/pipe-fittings/v2/parse"
 	"github.com/zclconf/go-cty/cty"
 )
 

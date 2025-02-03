@@ -2,7 +2,8 @@ package ociinstaller
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
+
+	"github.com/turbot/pipe-fittings/v2/app_specific"
 )
 
 func MediaTypeConfig() string {

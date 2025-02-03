@@ -7,28 +7,20 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/cty_helpers"
-	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/cty_helpers"
+	"github.com/turbot/pipe-fittings/v2/filepaths"
+	"github.com/turbot/pipe-fittings/v2/hclhelpers"
+	"github.com/turbot/pipe-fittings/v2/options"
 	"github.com/zclconf/go-cty/cty"
 )
 
 type TailpipeWorkspaceProfile struct {
 	ProfileName string `hcl:"name,label" cty:"name"`
 
-	Local            *string `hcl:"local" cty:"local"`
-	Remote           *string `hcl:"remote" cty:"remote"`
-	RemoteConnection *string `hcl:"remote_connection" cty:"remote_connection"`
-
 	// general options
 	UpdateCheck *string `hcl:"update_check" cty:"update_check"`
 	LogLevel    *string `hcl:"log_level" cty:"log_level"`
-	MemoryMaxMb *int    `hcl:"memory_max_mb" cty:"memory_max_mb"`
-
-	// terminal options
-	Timing *bool `hcl:"timing" cty:"timing"`
 
 	Base *TailpipeWorkspaceProfile `hcl:"base"`
 
@@ -72,13 +64,8 @@ func (p *TailpipeWorkspaceProfile) setBaseProperties() {
 func (p *TailpipeWorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} {
 	res := ConfigMap{}
 	// add non-empty properties to config map
-	res.SetStringItem(p.Local, constants.ArgLocal)
-	res.SetStringItem(p.Remote, constants.ArgRemote)
-	res.SetStringItem(p.RemoteConnection, constants.ArgRemoteConnection)
 	res.SetStringItem(p.UpdateCheck, constants.ArgUpdateCheck)
 	res.SetStringItem(p.LogLevel, constants.ArgLogLevel)
-	res.SetIntItem(p.MemoryMaxMb, constants.ArgMemoryMaxMb)
-	res.SetBoolItem(p.Timing, constants.ArgTiming)
 
 	return res
 }
@@ -121,13 +108,7 @@ func (p *TailpipeWorkspaceProfile) EnsureWorkspaceDirs() error {
 }
 
 func (p *TailpipeWorkspaceProfile) GetDataDir() string {
-	var dataDir string
-	if p.Local != nil {
-		dataDir = *p.Local
-	} else {
-		dataDir = filepath.Join(filepaths.GetDataDir(), p.ProfileName)
-	}
-	return dataDir
+	return filepath.Join(filepaths.GetDataDir(), p.ProfileName)
 }
 
 // GetCollectionDir returns the path to the collection data directory

@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/turbot/pipe-fittings/v2/constants"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/queryresult"
-	"github.com/turbot/pipe-fittings/sperr"
+	"github.com/turbot/pipe-fittings/v2/queryresult"
+	"github.com/turbot/pipe-fittings/v2/sperr"
 )
 
 var ErrUnknownBackend = errors.New("unknown backend")
@@ -28,10 +29,29 @@ type SearchPathProvider interface {
 	ResolvedSearchPath() []string
 }
 
-func FromConnectionString(ctx context.Context, str string) (Backend, error) {
+// NameFromConnectionString returns the name of the backend from the connection string
+// NOTE: this function is does not create the backend so cannot check if a postgres the backend is a steampipe backend
+func NameFromConnectionString(ctx context.Context, cs string) (string, error) {
 	switch {
-	case IsPostgresConnectionString(str):
-		pgBackend, err := NewPostgresBackend(ctx, str)
+	case IsPostgresConnectionString(cs):
+		// NOTE: this _may be_ a steampipe backend but this function does not check as we want it to be inexpensive
+		return constants.PostgresBackendName, nil
+	case IsMySqlConnectionString(cs):
+		return constants.MySQLBackendName, nil
+	case IsDuckDBConnectionString(cs):
+		return constants.DuckDBBackendName, nil
+	case IsSqliteConnectionString(cs):
+		return constants.SQLiteBackendName, nil
+	default:
+		return "", sperr.WrapWithMessage(ErrUnknownBackend, "could not evaluate backend: '%s'", cs)
+	}
+}
+
+// FromConnectionString creates a backend from a connection string
+func FromConnectionString(ctx context.Context, cs string) (Backend, error) {
+	switch {
+	case IsPostgresConnectionString(cs):
+		pgBackend, err := NewPostgresBackend(ctx, cs)
 		if err != nil {
 			return nil, err
 		}
@@ -41,14 +61,14 @@ func FromConnectionString(ctx context.Context, str string) (Backend, error) {
 		}
 		return pgBackend, nil
 
-	case IsMySqlConnectionString(str):
-		return NewMySQLBackend(str), nil
-	case IsDuckDBConnectionString(str):
-		return NewDuckDBBackend(str), nil
-	case IsSqliteConnectionString(str):
-		return NewSqliteBackend(str), nil
+	case IsMySqlConnectionString(cs):
+		return NewMySQLBackend(cs), nil
+	case IsDuckDBConnectionString(cs):
+		return NewDuckDBBackend(cs), nil
+	case IsSqliteConnectionString(cs):
+		return NewSqliteBackend(cs), nil
 	default:
-		return nil, sperr.WrapWithMessage(ErrUnknownBackend, "could not evaluate backend: '%s'", str)
+		return nil, sperr.WrapWithMessage(ErrUnknownBackend, "could not evaluate backend: '%s'", cs)
 	}
 }
 

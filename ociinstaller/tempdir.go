@@ -2,10 +2,11 @@ package ociinstaller
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/error_helpers"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/turbot/pipe-fittings/v2/error_helpers"
 
 	"github.com/google/uuid"
 )

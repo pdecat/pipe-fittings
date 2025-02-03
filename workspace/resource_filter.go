@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/danwakefield/fnmatch"
-	"github.com/turbot/pipe-fittings/filter"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/printers"
-	"github.com/turbot/pipe-fittings/sperr"
+	"github.com/turbot/pipe-fittings/v2/filter"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	"github.com/turbot/pipe-fittings/v2/printers"
+	"github.com/turbot/pipe-fittings/v2/sperr"
 	"golang.org/x/exp/maps"
 )
 
