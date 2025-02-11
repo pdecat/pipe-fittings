@@ -2,6 +2,10 @@
 
 Shared Pipes Component
 
+## v2.1.0 [2025-02-02]
+* TailpipeConnection now supports indexes/partitions in addition to to/from. ([#632](https://github.com/turbot/pipe-fittings/issues/632)).
+* Move secrets package to from code plugin
+
 ## v2.0.1 [2025-02-02]
 
 * Add backend.NameFromConnectionString. ([#631](https://github.com/turbot/pipe-fittings/issues/631)).
