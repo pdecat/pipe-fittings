@@ -2,7 +2,13 @@
 
 Shared Pipes Component
 
-## v2.0.0 [tbd]
+## v2.0.1 [2025-02-02]
+
+* Add backend.NameFromConnectionString. ([#631](https://github.com/turbot/pipe-fittings/issues/631)).
+* Show row count only when paged in querydisplay table
+* Add constants.ArgQuiet
+
+## v2.0.0 [2025-01-30]
 
 * Add support for `tailpipe` and tailpipe detections within `powerpipe`
 * Remove flowpipe and powerpipe specific resources and move into their respective app repos. ([#603](https://github.com/turbot/pipe-fittings/issues/603)).
